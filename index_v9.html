@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>CYBER RAPPER // LOST ARCHIVE RPG (v9.0 2.5D &amp; BEAT PUPPET)</title>
+  <link rel="stylesheet" href="style.css">
+  <style id="v9-style">
+    :root { --beat-sec: 0.545s; --half-beat-sec: 0.272s; }
+    .beat-puppet-stage { position: relative; width: 100%; height: 100%; overflow: visible; user-select: none; pointer-events: none; }
+    .puppet-layer { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .puppet-layer svg, .puppet-layer img { width: 100%; height: 100%; display: block; }
+    @keyframes puppetTorsoBounce { 0%, 100% { transform: translateY(0) scaleY(1); } 36% { transform: translateY(3.5px) scaleY(0.988); } 68% { transform: translateY(-1px) scaleY(1.005); } }
+    @keyframes puppetHeadNod { 0%, 100% { transform: translateY(0) rotate(-2.4deg); } 38% { transform: translateY(4.5px) rotate(4.8deg); } 72% { transform: translateY(-1.5px) rotate(-1.2deg); } }
+    @keyframes puppetMicSwing { 0%, 100% { transform: translate(0,0) rotate(-5deg) scale(1); } 40% { transform: translate(-3px,-7px) rotate(8.5deg) scale(1.04); } 75% { transform: translate(2px,2px) rotate(-2deg) scale(0.99); } }
+    @keyframes flamePulse { 0%, 100% { transform: scaleX(1) scaleY(1) translateY(0); opacity: 0.86; } 50% { transform: scaleX(1.06) scaleY(1.15) translateY(-5px); opacity: 1; } }
+    @keyframes emberRise { 0% { transform: translateY(14px) translateX(0) scale(1); opacity: 0.95; } 100% { transform: translateY(-115px) translateX(var(--ex, 10px)) scale(0.2); opacity: 0; } }
+    @keyframes hitStopFlash { 0% { opacity: 0.92; background: linear-gradient(135deg, #fff, #00f0ff); } 100% { opacity: 0; background: transparent; } }
+    .puppet-torso-anim { transform-origin: 50% 96%; animation: puppetTorsoBounce var(--beat-sec) cubic-bezier(.28,.08,.32,1) infinite; }
+    .puppet-head-anim { transform-origin: 50% 44%; animation: puppetHeadNod var(--beat-sec) cubic-bezier(.26,.06,.3,1) infinite; }
+    .puppet-hand-anim { transform-origin: 72% 92%; animation: puppetMicSwing var(--beat-sec) ease-in-out infinite; z-index: 6; }
+    .puppet-spit-burst .puppet-hand-anim { transform: translate(-6px, -12px) scale(1.18) rotate(12deg) !important; transition: transform 0.14s ease-out; }
+    .puppet-flame-wrap { position: absolute; inset: -8% -10% 0% -10%; z-index: 1; mix-blend-mode: screen; pointer-events: none; transform-origin: 50% 92%; animation: flamePulse var(--half-beat-sec) ease-in-out infinite; }
+    .puppet-flame-wrap.inferno { inset: -16% -16% 0% -16%; filter: saturate(1.35) brightness(1.2); }
+    .flame-ember { position: absolute; bottom: 12%; width: 5px; height: 5px; border-radius: 50%; mix-blend-mode: screen; animation: emberRise 1.1s linear infinite; }
+    .stage-monitor.street-25d { height: 242px; border-color: rgba(0,240,255,0.45); }
+    #three-street-mount { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+    #three-street-mount canvas { width: 100% !important; height: 100% !important; display: block; }
+    .heat-gauge-pill { display: inline-flex; align-items: center; gap: 5px; background: rgba(8,8,16,0.88); border: 1px solid rgba(255,51,88,0.5); border-radius: 6px; padding: 3px 7px; font-size: 9px; font-family: monospace; font-weight: 900; margin-top: 4px; }
+    .heat-bar-mini { width: 46px; height: 6px; background: #1b1524; border-radius: 99px; overflow: hidden; }
+    .heat-bar-fill { height: 100%; background: linear-gradient(90deg, #ffc83b, #ff2e93, #ff3358); transition: width 0.18s ease; }
+    .heat-danger { box-shadow: 0 0 14px rgba(255,51,88,0.8); border-color: #ff3358; }
+    .stick-deck-grid { display: grid; grid-template-columns: 114px 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .v-joystick-zone { position: relative; width: 104px; height: 104px; margin: 0 auto; border-radius: 50%; background: radial-gradient(circle, rgba(0,240,255,0.14) 0%, rgba(12,13,24,0.94) 72%); border: 1.8px solid rgba(0,240,255,0.48); box-shadow: inset 0 0 18px rgba(0,240,255,0.18), 0 4px 16px rgba(0,0,0,0.65); touch-action: none; user-select: none; cursor: grab; }
+    .v-joystick-knob { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff 0%, #00f0ff 45%, #0a2540 100%); border: 2px solid #fff; box-shadow: 0 0 16px rgba(0,240,255,0.85); pointer-events: none; }
+    .v-stick-hint { position: absolute; bottom: -14px; left: 0; right: 0; text-align: center; font-size: 8px; font-family: monospace; color: var(--text-sub); pointer-events: none; }
+    .tactical-skill-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 6px; }
+    .tac-skill-btn { padding: 6px 4px; border-radius: 8px; background: linear-gradient(180deg, #1e1e32, #11111d); border: 1px solid var(--border); color: var(--text-main); font-size: 9.5px; font-weight: 800; cursor: pointer; text-align: center; line-height: 1.2; }
+    .tac-skill-btn.active { border-color: var(--accent-lime); background: rgba(200,255,41,0.18); color: var(--accent-lime); box-shadow: 0 0 12px rgba(200,255,41,0.35); }
+    .tac-skill-btn.cooldown { opacity: 0.42; pointer-events: none; }
+    .beat-ring-wrap { position: relative; display: flex; align-items: center; justify-content: center; height: 52px; margin: 4px 0 6px; }
+    .beat-ring-outer { position: absolute; width: 100%; height: 44px; border-radius: 12px; border: 2.5px solid var(--accent-cyan); pointer-events: none; box-shadow: 0 0 16px rgba(0,240,255,0.55); transform: scale(var(--ring-scale, 1.18)); opacity: var(--ring-alpha, 0.75); }
+    .beat-ring-outer.just-zone { border-color: var(--accent-lime); box-shadow: 0 0 22px rgba(200,255,41,0.95); }
+    .beat-spit-main-btn { position: relative; z-index: 2; width: 92%; height: 40px; border-radius: 10px; border: 2px solid #fff; background: linear-gradient(90deg, #00f0ff, #c8ff29); color: #050508; font-size: 12.5px; font-weight: 900; letter-spacing: 0.05em; cursor: pointer; box-shadow: 0 4px 18px rgba(0,240,255,0.4); }
+    .answer-choice.armed { border-color: var(--accent-cyan); background: rgba(0,240,255,0.18); box-shadow: inset 3px 0 0 var(--accent-lime); }
+    .trend-ticker-bar { background: rgba(8,10,20,0.92); border: 1px solid rgba(255,200,59,0.5); border-radius: 7px; padding: 4px 8px; font-size: 9.5px; font-family: monospace; font-weight: 900; color: var(--accent-gold); margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .seq-matrix { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 8px; }
+    .seq-row { display: grid; grid-template-columns: 44px repeat(8, 1fr); gap: 3px; align-items: center; }
+    .seq-lbl { font-size: 8.5px; font-family: monospace; font-weight: 900; color: var(--text-sub); }
+    .seq-pad { height: 21px; border-radius: 4px; background: #141422; border: 1px solid #2b2b44; cursor: pointer; }
+    .seq-pad.on-kick { background: var(--accent-cyan); border-color: #fff; }
+    .seq-pad.on-snare { background: var(--accent-pink); border-color: #fff; }
+    .seq-pad.on-hat { background: var(--accent-lime); border-color: #fff; }
+    .seq-pad.on-bass { background: var(--accent-purple); border-color: #fff; }
+    .seq-pad.playhead { outline: 2px solid #fff; transform: scale(1.08); }
+    .turf-map-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px; }
+    .turf-node { background: rgba(8,9,18,0.88); border: 1.5px solid var(--border); border-radius: 8px; padding: 5px 6px; text-align: center; font-family: monospace; }
+    input[type="range"].lot-slider { width: 100%; accent-color: var(--accent-lime); margin: 4px 0; }
+  </style>
+</head>
+<body>
+<div id="app-shell">
+  <div id="shutter"></div><div id="toast"></div><div id="cutin-layer"></div><div id="fx-layer"></div>
+  <div id="title-screen"></div>
+  <div class="topbar" id="topbar" style="display:none;">
+    <div class="hud-top-row">
+      <div class="hud-player-chip" onclick="openCardModal()" title="ステータス・3Dホロカードを開く">
+        <span class="hud-side-badge" id="ui-side">A-SIDE</span><span class="hud-lv-badge" id="ui-lv">LV.1</span><span class="hud-mc-name" id="ui-mc-name">LUNA</span>
+      </div>
+      <div class="hud-quick-btns">
+        <button class="hud-btn hud-btn-save" onclick="openSaveModal()">💾 セーブ</button>
+        <button class="hud-btn hud-btn-bag" onclick="openBagModal()">🎒 持ち物</button>
+        <button class="hud-btn hud-btn-card" onclick="openCardModal()">🃏 カード</button>
+        <button class="hud-btn" onclick="openSysModal()">⚙️</button>
+      </div>
+    </div>
+    <div class="hud-sub-row">
+      <div class="currency-bar"><span class="cur-cash" id="ui-cash">¥0</span><span class="cur-sync" id="ui-sync">💿1</span><span class="cur-rep" id="ui-rep">👑0</span></div>
+      <div class="world-loc" id="ui-loc" onclick="quickManualSave()">📍LOCAL / 🕒NIGHT</div>
+    </div>
+  </div>
+  <div id="cockpit-body"><div id="stage-view"></div><div id="command-deck"></div></div>
+  <div id="bottom-nav" style="display:none;">
+    <button class="nav-btn active" data-tab="street" onclick="switchTab('street')"><span class="ico">🗺️</span><span>2.5D街探索</span></button>
+    <button class="nav-btn" data-tab="hustle" onclick="switchTab('hustle')"><span class="ico">🎤</span><span>鍛錬・職</span></button>
+    <button class="nav-btn" data-tab="shop" onclick="switchTab('shop')"><span class="ico">🛒</span><span>EC・レコード</span></button>
+    <button class="nav-btn" data-tab="studio" onclick="switchTab('studio')"><span class="ico">🎛️</span><span>スタジオ</span></button>
+    <button class="nav-btn" data-tab="chart" onclick="switchTab('chart')"><span class="ico">⚡</span><span>グロウ・番付</span></button>
+  </div>
+  <div id="modal-layer"></div>
+</div>
+<canvas id="export-canvas" width="840" height="1180" style="display:none;"></canvas>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="data_master.js"></script>
+<script src="avatar_parts.js"></script>
+<script src="avatar_card.js"></script>
+<script src="street_rpg.js"></script>
+<script src="grow_cloud.js"></script>
+<script src="game.js"></script>
+<script id="v9-engine-and-systems">
+/* =========================================================================
+   CYBER RAPPER v9.0 — 2.5D Neon Alley + 4-Layer Beat Puppet + All-In Sim
+   ========================================================================= */
+AudioEngine.getCurrentBpm = function () {
+  const tid = this.currentTrackId || (state.music && state.music.equippedTrackId) || 'bb_01';
+  return Math.max(75, Math.min(168, (this.findTrack(tid)?.bpm) || 110));
+};
+
+function buildCyberFlameHTML(isBSide, lv) {
+  if (!lv || lv <= 0) return '';
+  const customFlame = AssetImageCache.resolve(isBSide ? 'fx_flame_pink.png' : 'fx_flame_cyan.png');
+  const c1 = isBSide ? '#c8ff29' : '#00f0ff', c2 = isBSide ? '#ff2e93' : '#ffc83b', c3 = isBSide ? '#b86bff' : '#0066ff';
+  const uid = 'flm' + (++_svgSeq % 9999);
+  const embers = [18, 34, 50, 66, 82].map((lp, i) => `<span class="flame-ember" style="left:${lp}%;background:${i%2?c2:c1};box-shadow:0 0 8px ${c1};--ex:${(i%2?1:-1)*(8+i*3)}px;animation-delay:${(i*0.19).toFixed(2)}s;"></span>`).join('');
+  return `<div class="puppet-flame-wrap ${lv >= 2 ? 'inferno' : ''}">
+    ${customFlame ? `<img src="${customFlame}" alt="" style="position:absolute;inset:0;mix-blend-mode:screen;">` : ''}
+    <svg viewBox="0 0 420 490" preserveAspectRatio="xMidYMax meet"><defs><radialGradient id="fg_${uid}" cx="50%" cy="72%" r="55%"><stop offset="0%" stop-color="${c1}" stop-opacity="0.95"/><stop offset="48%" stop-color="${c2}" stop-opacity="0.68"/><stop offset="85%" stop-color="${c3}" stop-opacity="0.22"/><stop offset="100%" stop-color="#000" stop-opacity="0"/></radialGradient></defs>
+      <ellipse cx="210" cy="340" rx="${lv>=2?168:132}" ry="${lv>=2?195:150}" fill="url(#fg_${uid})"/>
+      <path d="M88 470 C62 360,108 250,134 158 C142 224,162 238,175 112 C196 196,212 184,224 72 C244 176,268 202,286 124 C296 218,326 244,336 172 C356 276,354 374,332 470 Z" fill="url(#fg_${uid})" opacity="${lv>=2?0.96:0.78}"/>
+      <path d="M132 470 C118 372,152 288,178 204 C192 262,206 246,214 156 C230 242,248 258,264 198 C286 286,298 378,288 470 Z" fill="${c1}" opacity="${lv>=2?0.62:0.42}"/>
+    </svg>${embers}</div>`;
+}
+
+function renderBeatPuppetHTML(profile, opts) {
+  const o = opts || {}, p = profile || state.profile, sideObj = getSideTheme(p.side), isDiva = p.gender === 'diva';
+  const glow = o.glow || getImplantGlow(), uid = 'pup' + (++_svgSeq % 9999), bpm = o.bpm || AudioEngine.getCurrentBpm();
+  const skins = [{ base:'#ffede4', blush:'#ff9eb5', shd1:'#f0bfa8', shd2:'#bf7c63', line:'#45221d' },{ base:'#f8d3bc', blush:'#f48a9e', shd1:'#e0a585', shd2:'#aa6848', line:'#3e1e18' },{ base:'#e2a87f', blush:'#d96b78', shd1:'#c17f53', shd2:'#8a4e29', line:'#33170f' },{ base:'#b0724a', blush:'#a34852', shd1:'#8c512d', shd2:'#592d13', line:'#241008' }];
+  const sk = skins[p.skinTone] || skins[0], out = findOutfitById(o.outfitId || p.outfitId || 'init_hoodie'), eqUps = o.upgrades || getEquippedUpgrades();
+  const hairBase = p.hairColor || '#f1f5f9', hairDark = shadeHex(hairBase, -72), hairLight = shadeHex(hairBase, 52), meshCol = p.meshColor || sideObj.color, acc = p.accentColor || sideObj.color;
+  const clothBase = out.color || '#2b2e42', defs = `<defs><linearGradient id="skin_${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${sk.base}"/><stop offset="100%" stop-color="${sk.shd1}"/></linearGradient><linearGradient id="hair_${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${hairLight}"/><stop offset="40%" stop-color="${hairBase}"/><stop offset="100%" stop-color="${hairDark}"/></linearGradient><linearGradient id="hairDarkG_${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${hairBase}"/><stop offset="100%" stop-color="${hairDark}"/></linearGradient><linearGradient id="cloth_${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${shadeHex(clothBase,38)}"/><stop offset="30%" stop-color="${clothBase}"/><stop offset="100%" stop-color="${shadeHex(clothBase,-46)}"/></linearGradient><linearGradient id="irisL_${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0f172a"/><stop offset="55%" stop-color="${acc}"/><stop offset="100%" stop-color="#fff"/></linearGradient><linearGradient id="irisR_${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0f172a"/><stop offset="55%" stop-color="#ffc83b"/><stop offset="100%" stop-color="#fff"/></linearGradient></defs>`;
+  const headPng = AssetImageCache.resolve(`${isDiva?'diva':'king'}_head_${p.hairType||0}.png`), bodyPng = AssetImageCache.resolve(`${isDiva?'diva':'king'}_outfit_${out.id}.png`), handPng = AssetImageCache.resolve('hand_mic_foreground.png');
+  const hairL = buildAnimeHairLayers(isDiva, p.hairType || 0, uid, meshCol), eyesSvg = buildAnimeEyesLayer(isDiva, p.eyesType || 0, uid, acc, meshCol, hairDark), outSvg = buildAnimeOutfitLayer(isDiva, out, uid, glow);
+  const faceP = isDiva ? 'M152 122 C152 156,162 184,182 201 Q198 214,210 215 Q222 214,238 201 C258 184,268 156,268 122 C268 78,244 64,210 64 C176 64,152 78,152 122 Z' : 'M148 122 C148 158,158 186,178 204 Q196 218,210 219 Q224 218,242 204 C262 186,272 158,272 122 C272 76,246 62,210 62 C174 62,148 76,148 122 Z';
+  const chainSvg = eqUps.includes('chain_silver') ? `<path d="M164 256 Q210 312 256 256" fill="none" stroke="#fff" stroke-width="7.5" stroke-dasharray="7 3" stroke-linecap="round"/>` : '';
+  const torsoHTML = bodyPng ? `<div class="puppet-layer puppet-torso-anim"><img src="${bodyPng}" alt=""></div>` : `<div class="puppet-layer puppet-torso-anim"><svg viewBox="0 10 420 342">${defs}<path d="M180 198 L170 272 L250 272 L240 198 Z" fill="url(#skin_${uid})" stroke="${sk.line}" stroke-width="2"/>${outSvg}${chainSvg}</svg></div>`;
+  const headHTML = headPng ? `<div class="puppet-layer puppet-head-anim"><img src="${headPng}" alt=""></div>` : `<div class="puppet-layer puppet-head-anim"><svg viewBox="0 10 420 342">${defs}<g>${hairL.back}</g><path d="${faceP}" fill="url(#skin_${uid})" stroke="${sk.line}" stroke-width="2.2"/><path d="M210 140 L206 164 L213 167" fill="none" stroke="${sk.shd2}" stroke-width="2"/><path d="M194 185 Q210 189 227 181" fill="none" stroke="${sk.line}" stroke-width="2.2"/>${eyesSvg}<g>${hairL.front}</g></svg></div>`;
+  const handHTML = o.showMicHand === false ? '' : (handPng ? `<div class="puppet-layer puppet-hand-anim"><img src="${handPng}" alt=""></div>` : `<div class="puppet-layer puppet-hand-anim"><svg viewBox="0 10 420 342"><g transform="translate(18,8)"><rect x="252" y="226" width="22" height="96" rx="8" transform="rotate(-18 263 274)" fill="#0d0f1a" stroke="#cbd5e1" stroke-width="2"/><ellipse cx="246" cy="214" rx="19" ry="21" transform="rotate(-18 246 214)" fill="#1e293b" stroke="${glow}" stroke-width="2.4"/><path d="M244 252 C240 242,274 236,282 250 C288 262,284 286,268 292 C252 296,244 274,244 252 Z" fill="#111320" stroke="${glow}" stroke-width="2"/></g></svg></div>`);
+  return `<div class="beat-puppet-stage ${o.burstClass||''}" style="--beat-sec:${(60/bpm).toFixed(3)}s;--half-beat-sec:${(30/bpm).toFixed(3)}s;${o.flipX?'transform:scaleX(-1);':''}">${buildCyberFlameHTML(p.side==='b_side', o.flameLevel||0)}${torsoHTML}${headHTML}${handHTML}</div>`;
+}
+
+const Street25DEngine = {
+  renderer: null, scene: null, camera: null, rafId: null, running: false, builtZoneIdx: -1,
+  rainGeo: null, playerSprite: null, rivalMeshes: [], joyVec: { x: 0, y: 0 }, keys: {}, posX: 0, posZ: 21, lastTs: 0,
+  gridToWorld(gx, gy) { return { x: (gx - 3) * 2.5, z: (gy - 3) * 7.0 }; },
+  worldToGrid(wx, wz) { return { gx: Math.max(0, Math.min(6, Math.round(wx / 2.5 + 3))), gy: Math.max(0, Math.min(6, Math.round(wz / 7.0 + 3))) }; },
+  makeTex(t1, t2, hex, isMc) {
+    const c = document.createElement('canvas'); c.width = isMc ? 160 : 256; c.height = isMc ? 220 : 96; const g = c.getContext('2d');
+    if (isMc) { g.fillStyle = hex; g.beginPath(); g.arc(80, 62, 25, 0, 6.28); g.fill(); g.fillStyle = '#0d0e1a'; g.beginPath(); g.moveTo(38,212); g.quadraticCurveTo(80,92,122,212); g.closePath(); g.fill(); g.strokeStyle = hex; g.lineWidth = 4; g.stroke(); g.fillStyle = '#fff'; g.font = '900 16px monospace'; g.textAlign = 'center'; g.fillText(t1.slice(0,11), 80, 22); }
+    else { g.fillStyle = '#070812'; g.fillRect(0,0,256,96); g.strokeStyle = hex; g.lineWidth = 6; g.strokeRect(4,4,248,88); g.fillStyle = hex; g.font = '900 25px Impact,sans-serif'; g.textAlign = 'center'; g.fillText(t1.slice(0,14), 128, 46); g.fillStyle = '#f8fafc'; g.font = '700 15px monospace'; g.fillText(t2.slice(0,18), 128, 74); }
+    return new THREE.CanvasTexture(c);
+  },
+  buildZoneScene(zIdx) {
+    if (typeof THREE === 'undefined') return false;
+    if (!this.renderer) { this.renderer = new THREE.WebGLRenderer({ antialias: true }); this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); this.camera = new THREE.PerspectiveCamera(58, 1.6, 0.2, 95); }
+    if (this.scene) this.scene.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { (Array.isArray(o.material)?o.material:[o.material]).forEach(m => { if (m.map) m.map.dispose(); m.dispose(); }); } });
+    const zone = STREET_ZONES[zIdx] || STREET_ZONES[0], sc = new THREE.Scene();
+    sc.background = new THREE.Color(zone.sky || '#090914'); sc.fog = new THREE.FogExp2(zone.sky || '#090914', 0.028);
+    sc.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const lA = new THREE.PointLight(zone.neonA, 1.8, 36); lA.position.set(-5, 6, 4); sc.add(lA);
+    const lB = new THREE.PointLight(zone.neonB, 1.8, 36); lB.position.set(5, 6, -12); sc.add(lB);
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(19, 58), new THREE.MeshStandardMaterial({ color: 0x090b14, roughness: 0.16, metalness: 0.78 })); road.rotation.x = -Math.PI / 2; sc.add(road);
+    for (let i = -3; i <= 3; i++) {
+      const pd = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 5.4), new THREE.MeshBasicMaterial({ color: i%2===0?zone.neonA:zone.neonB, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending }));
+      pd.rotation.x = -Math.PI / 2; pd.position.set(i%2===0?-3.4:3.4, 0.02, i * 7.2); sc.add(pd);
+    }
+    for (let z = -24; z <= 24; z += 6) [-9.6, 9.6].forEach((xs, idx) => {
+      const h = 9 + ((Math.abs(z) + idx * 3) % 5) * 1.8;
+      const b = new THREE.Mesh(new THREE.BoxGeometry(3.2, h, 5.4), new THREE.MeshStandardMaterial({ color: 0x0c0e1b, roughness: 0.65 })); b.position.set(xs, h/2, z); sc.add(b);
+      const tr = new THREE.Mesh(new THREE.BoxGeometry(0.12, h, 0.18), new THREE.MeshBasicMaterial({ color: idx===0?zone.neonA:zone.neonB })); tr.position.set(xs>0?xs-1.62:xs+1.62, h/2, z+2.2); sc.add(tr);
+    });
+    zone.landmarks.forEach(lm => {
+      const wp = this.gridToWorld(lm.x, lm.y);
+      const sg = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 1.32), new THREE.MeshBasicMaterial({ map: this.makeTex(lm.sign, lm.tag, lm.color, false), side: THREE.DoubleSide })); sg.position.set(wp.x, 3.1, wp.z); sc.add(sg);
+      const rg = new THREE.Mesh(new THREE.RingGeometry(0.95, 1.25, 24), new THREE.MeshBasicMaterial({ color: lm.color, side: THREE.DoubleSide, transparent: true, opacity: 0.72 })); rg.rotation.x = -Math.PI / 2; rg.position.set(wp.x, 0.04, wp.z); sc.add(rg);
+    });
+    this.rivalMeshes = [{ x:-2.5, z:7, l:'🎤 RIVAL MC', c:'#ff2e93', s:1.4 }, { x:2.5, z:-7, l:'⚡ ASSASSIN', c:'#ffc83b', s:-1.7 }].map(rv => {
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.makeTex(rv.l, '', rv.c, true), transparent: true })); sp.scale.set(1.7, 2.35, 1); sp.position.set(rv.x, 1.18, rv.z); sc.add(sp);
+      return { sprite: sp, baseX: rv.x, z: rv.z, speed: rv.s };
+    });
+    this.playerSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.makeTex(state.profile.artistName || 'YOU', '', getSideTheme().color, true), transparent: true }));
+    this.playerSprite.scale.set(1.65, 2.3, 1); sc.add(this.playerSprite);
+    const rArr = new Float32Array(220 * 3); for (let i = 0; i < 220; i++) { rArr[i*3] = (Math.random()-0.5)*18; rArr[i*3+1] = Math.random()*12; rArr[i*3+2] = (Math.random()-0.5)*54; }
+    this.rainGeo = new THREE.BufferGeometry(); this.rainGeo.setAttribute('position', new THREE.BufferAttribute(rArr, 3));
+    sc.add(new THREE.Points(this.rainGeo, new THREE.PointsMaterial({ color: 0x00f0ff, size: 0.14, transparent: true, opacity: 0.58 })));
+    this.scene = sc; this.builtZoneIdx = zIdx; const ms = ensureMapState(), wp = this.gridToWorld(ms.x, ms.y); this.posX = wp.x; this.posZ = wp.z; return true;
+  },
+  mountAndResume() {
+    const mount = document.getElementById('three-street-mount'); if (!mount || typeof THREE === 'undefined') return false;
+    if (this.builtZoneIdx !== state.areaIndex || !this.scene) this.buildZoneScene(state.areaIndex);
+    if (this.renderer.domElement.parentNode !== mount) { mount.innerHTML = ''; mount.appendChild(this.renderer.domElement); }
+    const w = Math.max(260, mount.clientWidth || 380), h = Math.max(180, mount.clientHeight || 242);
+    this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); this.renderer.setSize(w, h, false);
+    const zone = document.getElementById('v-joystick'), knob = document.getElementById('v-joystick-knob');
+    if (zone && knob && !zone.dataset.bound) {
+      zone.dataset.bound = '1'; let drag = false;
+      const move = (cx, cy) => { const r = zone.getBoundingClientRect(); let dx = cx-(r.left+r.width/2), dy = cy-(r.top+r.height/2), d = Math.hypot(dx,dy); if (d>32){dx=dx/d*32;dy=dy/d*32;} knob.style.transform=`translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px)`; this.joyVec={x:dx/32,y:dy/32}; };
+      const stop = () => { drag = false; knob.style.transform = 'translate(0,0)'; this.joyVec = { x: 0, y: 0 }; };
+      zone.addEventListener('pointerdown', e => { drag = true; zone.setPointerCapture(e.pointerId); move(e.clientX, e.clientY); });
+      zone.addEventListener('pointermove', e => { if (drag) move(e.clientX, e.clientY); });
+      zone.addEventListener('pointerup', stop); zone.addEventListener('pointercancel', stop);
+    }
+    if (!this.running) { this.running = true; this.lastTs = performance.now(); this.loop(this.lastTs); }
+  },
+  pause() { this.running = false; this.joyVec = { x: 0, y: 0 }; if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; } },
+  loop(ts) {
+    if (!this.running || state.currentTab !== 'street' || activeBattle || document.hidden) return this.pause();
+    const dt = Math.min(0.05, (ts - this.lastTs) / 1000); this.lastTs = ts;
+    const vx = this.joyVec.x + (this.keys.ArrowRight||this.keys.KeyD?1:0) - (this.keys.ArrowLeft||this.keys.KeyA?1:0);
+    const vz = this.joyVec.y + (this.keys.ArrowDown||this.keys.KeyS?1:0) - (this.keys.ArrowUp||this.keys.KeyW?1:0);
+    const mag = Math.hypot(vx, vz);
+    if (mag > 0.08) {
+      const nx = vx/Math.max(1,mag), nz = vz/Math.max(1,mag);
+      this.posX = Math.max(-7.6, Math.min(7.6, this.posX + nx * 6.2 * dt)); this.posZ = Math.max(-21.5, Math.min(21.5, this.posZ + nz * 8.4 * dt));
+      const ms = ensureMapState(); ms.dir = Math.abs(nx)>Math.abs(nz)?(nx>0?'E':'W'):(nz>0?'S':'N');
+      const g = this.worldToGrid(this.posX, this.posZ);
+      if (g.gx !== ms.x || g.gy !== ms.y) { ms.x = g.gx; ms.y = g.gy; if (!ms.visited.includes(`${ms.x},${ms.y}`)) ms.visited.push(`${ms.x},${ms.y}`); onStreetGridChanged(); }
+    }
+    if (this.rainGeo) { const a = this.rainGeo.attributes.position.array; for (let i=1;i<a.length;i+=3){a[i]-=18*dt;if(a[i]<0)a[i]=12;} this.rainGeo.attributes.position.needsUpdate = true; }
+    let near = false; this.rivalMeshes.forEach((rm, i) => { rm.sprite.position.x = rm.baseX + Math.sin(ts*0.0014*rm.speed+i)*3.6; if (Math.hypot(rm.sprite.position.x-this.posX, rm.z-this.posZ)<3.5) near = true; });
+    const v9 = ensureV9State();
+    if (near) { v9.heat = Math.min(100, v9.heat + 34 * dt); updateStreetHudDOM(); if (v9.heat >= 100) { v9.heat = 15; this.pause(); return triggerStreetHeatEncounter(); } }
+    else if (v9.heat > 0) { v9.heat = Math.max(0, v9.heat - 10 * dt); updateStreetHudDOM(); }
+    if (this.playerSprite) this.playerSprite.position.set(this.posX, 1.15 + Math.sin(ts*0.01*(mag>0.1?1.8:0.7))*0.06, this.posZ);
+    this.camera.position.set(this.posX * 0.65, 3.05, this.posZ + 5.6); this.camera.lookAt(this.posX * 0.85, 1.35, this.posZ - 6.5);
+    this.renderer.render(this.scene, this.camera); this.rafId = requestAnimationFrame(t => this.loop(t));
+  }
+};
+window.addEventListener('keydown', e => Street25DEngine.keys[e.code] = true);
+window.addEventListener('keyup', e => Street25DEngine.keys[e.code] = false);
+
+const FLOW_SKILLS = [
+  { id: 'double_time', ico: '⚡', name: '倍速フロウ', cd: 2 },
+  { id: 'acapella', ico: '🔇', name: 'アカペラ返し', cd: 2 },
+  { id: 'crowd_fire', ico: '🔥', name: '観客煽り', cd: 3 }
+];
+const FEAT_GUESTS = [
+  { id: 'none', name: 'ソロ収録（客演なし）', cost: 0, mult: 1.0 },
+  { id: 'lil_neo', name: 'Feat. LIL NEO（新鋭トラッパー）', cost: 15000, mult: 1.28 },
+  { id: 'rina_x', name: 'Feat. RINA-X（フィメールMC）', cost: 28000, mult: 1.48 },
+  { id: 'roster', name: 'Feat. 自社レーベル所属MC（¥0連携）', cost: 0, mult: 1.38, reqRoster: true }
+];
+let beatRingRaf = null, beatRingStart = performance.now(), seqPreviewTimer = null, seqPlayStep = -1;
+
+function ensureV9State() {
+  if (!state.v9) state.v9 = { heat: 10, snsTrend: { hotRoot: 'darkdrill', subRoot: 'melodic', hotColor: '#00f0ff', hotStyle: 'cyber', updatedTurn: 0 }, seqGrid: [[1,0,0,1,0,0,1,0],[0,0,1,0,0,0,1,0],[1,1,1,1,1,1,1,1],[1,0,0,1,0,1,0,0]], turf: { LOCAL: 52, METRO: 48, PORT: 50 }, lotCount: 80 };
+  return state.v9;
+}
+function rotateSnsTrendIfNeeded() {
+  const v9 = ensureV9State(), roots = MUSIC_ROOTS.filter(r => !r.isRare), turn = state.actionTurn || 0;
+  if (turn - (v9.snsTrend.updatedTurn || 0) >= 3) v9.snsTrend = { hotRoot: roots[turn%roots.length].id, subRoot: roots[(turn+2)%roots.length].id, hotColor: ['#00f0ff','#c8ff29','#ffc83b','#ff2e93'][turn%4], hotStyle: ['hoodie','cyber','fur'][turn%3], updatedTurn: turn };
+  return v9.snsTrend;
+}
+
+const _v8Advance = advanceWorldTime;
+advanceWorldTime = function () {
+  const v9 = ensureV9State();
+  if (Array.isArray(state.labelRoster) && state.labelRoster.length > 0) {
+    const sign = state.profile.side === 'a_side' ? 1 : -1;
+    state.labelRoster.forEach(m => { const z = m.zoneId || 'LOCAL'; v9.turf[z] = Math.max(8, Math.min(92, (v9.turf[z]??50) + sign * 2)); });
+    const held = ['LOCAL','METRO','PORT'].filter(z => state.profile.side==='a_side' ? v9.turf[z]>=55 : v9.turf[z]<=45).length;
+    if (held > 0) state.cash += held * 6500;
+  }
+  _v8Advance(); rotateSnsTrendIfNeeded();
+};
+
+const _v8Switch = switchTab;
+switchTab = function (tab) {
+  if (tab !== 'street') Street25DEngine.pause();
+  if (seqPreviewTimer) { clearInterval(seqPreviewTimer); seqPreviewTimer = null; }
+  if (beatRingRaf) { cancelAnimationFrame(beatRingRaf); beatRingRaf = null; }
+  _v8Switch(tab);
+};
+
+function buildMiniMapCellsHTML() {
+  const zone = STREET_ZONES[state.areaIndex] || STREET_ZONES[0], ms = ensureMapState(), sideObj = getSideTheme(); let h = '';
+  for (let gy=0;gy<7;gy++) for (let gx=0;gx<7;gx++) {
+    const isMe = gx===ms.x && gy===ms.y, lm = zone.landmarks.find(l=>l.x===gx&&l.y===gy), vis = ms.visited.includes(`${gx},${gy}`);
+    h += `<div class="mm-cell" style="background:${isMe?sideObj.sub:lm?lm.color:vis?'rgba(0,240,255,0.26)':'rgba(255,255,255,0.06)'};color:${isMe?'#050508':'#fff'};">${isMe?DIR_ARROW[ms.dir]:(lm?'•':'')}</div>`;
+  }
+  return h;
+}
+function updateStreetHudDOM() {
+  const v9 = ensureV9State(), ms = ensureMapState(), zone = STREET_ZONES[state.areaIndex] || STREET_ZONES[0];
+  const f = document.getElementById('ui-heat-fill'), p = document.getElementById('ui-heat-pct'), pl = document.getElementById('ui-heat-pill');
+  if (f) f.style.width = `${Math.round(v9.heat)}%`; if (p) p.textContent = `${Math.round(v9.heat)}%`; if (pl) pl.classList.toggle('heat-danger', v9.heat >= 70);
+  const c = document.getElementById('ui-25d-coord'); if (c) c.textContent = `${zone.id} (${ms.x},${ms.y}) ${DIR_JP[ms.dir]}`;
+  const m = document.getElementById('ui-25d-minimap'); if (m) m.innerHTML = buildMiniMapCellsHTML();
+}
+function renderStreetContextPanelHTML() {
+  const zone = STREET_ZONES[state.areaIndex] || STREET_ZONES[0], ms = ensureMapState(), spot = zone.landmarks.find(l => l.x === ms.x && l.y === ms.y);
+  if (spot) return `<div style="font-size:11.5px;font-weight:900;color:${spot.color};margin-bottom:2px;">${spot.ico} ${spot.name}</div><div style="font-size:9.5px;color:var(--text-sub);margin-bottom:6px;">${spot.desc}</div><button class="btn btn-lime" style="padding:8px;font-size:11px;" onclick="${spot.fn}">${spot.act}</button>`;
+  return `<div style="font-size:11px;font-weight:900;color:var(--accent-cyan);margin-bottom:3px;">🕹️ 2.5D ネオン路地フリー探索中</div><div style="font-size:9px;color:var(--text-sub);margin-bottom:6px;">左スティックで立体路地を移動！敵MC接近でHEAT上昇＆バトル突入！</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;"><button class="btn btn-gold" style="padding:6px;font-size:9.5px;" onclick="rollJobFlyerSpot()">📄 求人ガチャ</button><button class="btn btn-danger" style="padding:6px;font-size:9.5px;" onclick="triggerStreetHeatEncounter()">⚡ 野良MC戦</button></div>`;
+}
+function onStreetGridChanged() {
+  updateStreetHudDOM(); const box = document.getElementById('street-ctx-box'); if (box) box.innerHTML = renderStreetContextPanelHTML();
+  if (!state.profile.hasQuitJob && !pendingJobOffer && Math.random() < 0.16) rollJobFlyerSpot(); else saveState();
+}
+function rollJobFlyerSpot() {
+  if (state.profile.hasQuitJob) return showToast('🔥 辞表提出済み！専業MCとして音楽とシノギで稼ごう！');
+  const r = Math.random(), tier = r < 0.15 ? 3 : r < 0.50 ? 2 : 1, pool = STREET_JOBS.filter(j => j.rarity === tier);
+  pendingJobOffer = pool[Math.floor(Math.random() * pool.length)];
+  triggerSlashCutIn(tier===3?'SSR SCOUT!!':'JOB FLYER!!', pendingJobOffer.name, tier===3?'#ffc83b':'#00f0ff'); Street25DEngine.pause(); renderStreetTab();
+}
+function triggerStreetHeatEncounter() {
+  Street25DEngine.pause(); const r = Math.random();
+  if (r < 0.2) return launchBattle(RARE_RAPPERS[Math.floor(Math.random() * RARE_RAPPERS.length)]);
+  return launchBattle(STREET_RIVALS[Math.floor(Math.random() * STREET_RIVALS.length)]);
+}
+function warpToLandmark25D(tx, ty) {
+  const ms = ensureMapState(); ms.x = tx; ms.y = ty; if (!ms.visited.includes(`${tx},${ty}`)) ms.visited.push(`${tx},${ty}`);
+  const wp = Street25DEngine.gridToWorld(tx, ty); Street25DEngine.posX = wp.x; Street25DEngine.posZ = wp.z; saveState(); renderStreetTab();
+}
+
+renderStreetTab = function () {
+  if (activeBattle) { Street25DEngine.pause(); return renderBattleArena(); }
+  const v9 = ensureV9State(), zone = STREET_ZONES[state.areaIndex] || STREET_ZONES[0], ms = ensureMapState(), sideObj = getSideTheme();
+  const jobCard = pendingJobOffer ? `<div class="panel" style="border-color:var(--accent-gold);"><div style="display:flex;justify-content:space-between;font-size:10px;font-weight:900;color:var(--accent-gold);"><span>🎰 ${pendingJobOffer.stars}</span><span>定期給 ¥${pendingJobOffer.wage.toLocaleString()}</span></div><div style="font-size:12px;font-weight:900;margin:3px 0;">${pendingJobOffer.name}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><button class="btn btn-gold" style="padding:7px;" onclick="acceptJobOffer('${pendingJobOffer.id}')">✅ 就職する</button><button class="btn" style="padding:7px;" onclick="pendingJobOffer=null;renderStreetTab()">見送る</button></div></div>` : '';
+  setCockpitView(
+    `<div class="stage-monitor street-25d"><div id="three-street-mount"></div><div class="stage-monitor-badge" style="right:92px;flex-direction:column;align-items:flex-start;gap:3px;"><span class="mon-pill" id="ui-25d-coord" style="color:${zone.neonA};">${zone.id} (${ms.x},${ms.y}) ${DIR_JP[ms.dir]}</span><div class="heat-gauge-pill" id="ui-heat-pill"><span style="color:var(--danger);">🔥HEAT</span><div class="heat-bar-mini"><div class="heat-bar-fill" id="ui-heat-fill" style="width:${Math.round(v9.heat)}%;"></div></div><span id="ui-heat-pct">${Math.round(v9.heat)}%</span></div></div><div class="minimap-box"><div class="minimap-grid" id="ui-25d-minimap">${buildMiniMapCellsHTML()}</div></div><div style="position:absolute;bottom:-6px;left:4px;width:90px;height:124px;z-index:8;pointer-events:none;">${renderBeatPuppetHTML(state.profile,{glow:sideObj.color,flameLevel:v9.heat>=75?1:0,showMicHand:false})}</div></div>`,
+    `${jobCard}<div class="stick-deck-grid"><div class="v-joystick-zone" id="v-joystick"><div class="v-joystick-knob" id="v-joystick-knob"></div><div class="v-stick-hint">360° STICK</div></div><div class="panel" id="street-ctx-box" style="margin-bottom:0;">${renderStreetContextPanelHTML()}</div></div><div class="chip-grid" style="margin-bottom:6px;">${zone.landmarks.map(lm=>`<span class="opt-chip" style="border-color:${lm.color}66;" onclick="warpToLandmark25D(${lm.x},${lm.y})">${lm.ico} ${lm.tag}</span>`).join('')}</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">${STREET_ZONES.map((z,i)=>`<button class="btn ${state.areaIndex===i?'btn-primary':''}" style="padding:7px 4px;font-size:10px;" onclick="Street25DEngine.pause();travelByTrain(${i})">🚇 ${z.id}</button>`).join('')}</div>`
+  );
+  requestAnimationFrame(() => Street25DEngine.mountAndResume());
+};
+
+function getBeatPhase() { const m = 60000 / AudioEngine.getCurrentBpm(); return ((performance.now() - beatRingStart) % m) / m; }
+function startBeatRingLoop() {
+  if (beatRingRaf) cancelAnimationFrame(beatRingRaf);
+  const tick = () => {
+    const ring = document.getElementById('beat-ring-outer'); if (!ring || !activeBattle) return;
+    const ph = getBeatPhase(), dist = Math.min(ph, 1 - ph), win = activeBattle.activeSkill === 'acapella' ? 0.32 : 0.18;
+    ring.style.setProperty('--ring-scale', (0.96 + (1 - ph) * 0.26).toFixed(3)); ring.classList.toggle('just-zone', dist <= win);
+    beatRingRaf = requestAnimationFrame(tick);
+  };
+  beatRingRaf = requestAnimationFrame(tick);
+}
+
+launchBattle = function (rv) {
+  Street25DEngine.pause(); AudioEngine.playEquipped(); beatRingStart = performance.now();
+  triggerSlashCutIn(rv.isRare?'RARE ENCOUNTER!!':'VERSUS!!', `VS ${rv.name}`, rv.isRare?'#ffc83b':'#ff2e93');
+  activeBattle = { rival: rv, round: 1, maxRounds: rv.isBoss||rv.isRare?4:3, hype: 52, rhymeChain: 0, armedIdx: 0, activeSkill: null, nextSpitBoost: 1, cooldowns: {}, spitBurst: false, choices: [...rv.answers].sort(()=>Math.random()-0.5), lastLog: `♪ ${AudioEngine.getCurrentBpm()} BPM // JUST SPITを狙え！` };
+  renderBattleArena();
+};
+function selectArmedChoice(i) { if (!activeBattle) return; activeBattle.armedIdx = i; document.querySelectorAll('.answer-choice').forEach((el, idx) => el.classList.toggle('armed', idx === i)); }
+function useFlowSkill(id) {
+  const b = activeBattle; if (!b || (b.cooldowns[id]||0)>0) return;
+  const sk = FLOW_SKILLS.find(s => s.id === id); b.cooldowns[id] = sk.cd; b.activeSkill = id;
+  if (id === 'double_time') b.rhymeChain += 1;
+  if (id === 'crowd_fire') { b.hype = Math.min(98, b.hype + 12); b.nextSpitBoost = 1.25; }
+  triggerSlashCutIn(sk.name, 'FLOW SKILL ACTIVATED!!', '#c8ff29'); renderBattleArena();
+}
+
+renderBattleArena = function () {
+  const b = activeBattle; if (!b) return renderStreetTab();
+  const bpm = AudioEngine.getCurrentBpm(), pFlame = b.hype>=75?2:b.hype>=50?1:0, eFlame = b.hype<=38?2:0;
+  const rProf = { side: 'b_side', gender: b.rival.style==='diva'||b.rival.style==='boss_queen'?'diva':'king', skinTone: 2, hairType: 3, hairColor: '#ff2e93', meshColor: '#c8ff29', accentColor: '#ff3358', eyesType: 4, outfitId: 'ec_cyber_jkt', props: ['pierce'] };
+  setCockpitView(
+    `<div class="stage-monitor" style="height:230px;background:radial-gradient(circle at 50% 25%,#341132 0%,#07070d 78%);border-color:var(--danger);">
+      <div style="position:absolute;top:7px;left:10px;right:10px;z-index:12;"><div style="display:flex;justify-content:space-between;font-size:9.5px;font-weight:900;margin-bottom:3px;"><span style="color:var(--accent-lime);">YOU:${b.hype}% ${b.rhymeChain?`🔥x${b.rhymeChain}`:''}</span><span style="color:#fff;font-family:monospace;">R${b.round}/${b.maxRounds} • ${bpm}BPM</span><span style="color:var(--danger);">${b.rival.name}</span></div><div class="hype-meter-bar"><div class="hype-fill-player" style="width:${b.hype}%;"></div></div></div>
+      <div style="position:absolute;left:2px;bottom:0;width:140px;height:176px;z-index:5;">${renderBeatPuppetHTML(state.profile,{bpm,flameLevel:pFlame,showMicHand:true,burstClass:b.spitBurst?'puppet-spit-burst':''})}</div>
+      <div style="position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) rotate(-8deg);font-family:Impact,sans-serif;font-size:25px;color:#ffc83b;z-index:7;">VS</div>
+      <div style="position:absolute;right:2px;bottom:0;width:140px;height:176px;z-index:5;">${renderBeatPuppetHTML(rProf,{bpm,flameLevel:eFlame,showMicHand:true,flipX:true})}</div>
+      <div style="position:absolute;left:8px;right:8px;bottom:6px;background:rgba(5,5,10,0.92);border:1px solid var(--danger);border-radius:9px;padding:6px 9px;z-index:10;"><div style="font-size:10px;font-weight:900;color:#fff;">${b.rival.name}「${b.rival.taunt}」</div><div style="display:flex;justify-content:space-between;font-size:8.8px;margin-top:2px;"><span style="color:var(--accent-cyan);font-family:monospace;">🎯 韻:[ …${b.rival.targetVowel} ]</span><span style="color:var(--accent-lime);font-weight:800;">${b.lastLog}</span></div></div>
+    </div>`,
+    `<div class="tactical-skill-row">${FLOW_SKILLS.map(sk=>{const cd=b.cooldowns[sk.id]||0,act=b.activeSkill===sk.id;return `<button class="tac-skill-btn ${act?'active':''} ${cd>0&&!act?'cooldown':''}" onclick="useFlowSkill('${sk.id}')">${sk.ico} ${sk.name}<div style="font-size:8px;color:var(--text-sub);">${cd>0&&!act?`CD:${cd}`:'READY'}</div></button>`;}).join('')}</div>
+    ${b.choices.map((ch,i)=>`<button class="answer-choice ${b.armedIdx===i?'armed':''}" onclick="selectArmedChoice(${i})">💬 「${ch.text}」</button>`).join('')}
+    <div class="beat-ring-wrap"><div class="beat-ring-outer" id="beat-ring-outer"></div><button class="beat-spit-main-btn" onclick="executeRhythmSpit('choice')">🎯 BEAT RING SPIT!!（輪が重なる瞬間タップx1.5）</button></div>
+    <div class="panel" style="padding:7px 9px;"><div style="display:flex;gap:6px;"><input type="text" id="battle-free-input" placeholder="自由1行アンサー入力（母音一致で特大クリティカル）"><button class="btn btn-cyan" style="width:auto;padding:0 12px;" onclick="executeRhythmSpit('free')">自由SPIT</button></div></div>`
+  );
+  startBeatRingLoop();
+};
+
+function executeRhythmSpit(mode) {
+  const b = activeBattle; if (!b) return;
+  const dist = Math.min(getBeatPhase(), 1 - getBeatPhase()), winW = b.activeSkill === 'acapella' ? 0.32 : 0.18;
+  const tRank = dist <= winW ? 'JUST' : dist <= 0.34 ? 'GOOD' : 'LATE', tMult = tRank === 'JUST' ? 1.5 : tRank === 'GOOD' ? 1.15 : 0.92;
+  const st = state.stats || { lyric:10, flow:10, vibes:10 }, statBoost = Math.floor((st.lyric + st.flow + st.vibes)/8) + ((state.level||1)-1)*2;
+  let base = 0, hit = false, line = '';
+  if (mode === 'free') {
+    const txt = (document.getElementById('battle-free-input')?.value || '').trim();
+    if (txt.length < 5) return showToast('5文字以上のアンサーを入力してください！');
+    if (LEGAL_NG_WORDS.some(w => txt.includes(w))) return showToast('⚠️ 審査NGワードが含まれています');
+    const v = extractVowelsJP(txt); hit = v.slice(-2) === b.rival.targetVowel.slice(-2) || v.includes(b.rival.targetVowel);
+    base = (hit ? 30 : 16) + statBoost; line = txt; state.lyrics.push({ id:'lyr_'+Date.now(), text:txt, vowels:v, rank:hit?'S':'A', moneySnap:state.cash });
+  } else {
+    const ch = b.choices[b.armedIdx || 0]; line = ch.text;
+    if (ch.quality === 'perfect') { base = 24 + statBoost; hit = true; } else if (ch.quality === 'good') base = 13 + Math.floor(statBoost/2); else base = -10;
+  }
+  b.rhymeChain = hit ? b.rhymeChain + 1 : 0;
+  const delta = base > 0 ? Math.round(base * tMult * (1 + Math.min(0.75, b.rhymeChain * 0.18)) * (b.nextSpitBoost || 1)) : base;
+  const counter = b.round < b.maxRounds ? Math.round((b.rival.isBoss ? 12 : 7) * (b.activeSkill === 'acapella' ? 0.5 : 1)) : 0;
+  b.hype = Math.max(5, Math.min(100, b.hype + delta - counter)); b.spitBurst = true; b.nextSpitBoost = 1;
+  Object.keys(b.cooldowns).forEach(k => { if (b.cooldowns[k] > 0 && k !== b.activeSkill) b.cooldowns[k]--; }); b.activeSkill = null;
+  b.lastLog = `${tRank}(${tMult}x) ${hit?`🔥x${b.rhymeChain}`:''} ➔ ${delta>=0?'+':''}${delta}%`;
+  if (tRank === 'JUST' || hit) {
+    const sh = document.getElementById('shutter'); if (sh) { sh.style.animation = 'none'; void sh.offsetWidth; sh.style.animation = 'hitStopFlash 0.22s ease-out forwards'; }
+    triggerSlashCutIn(tRank==='JUST'?'JUST SPIT x1.5!!':'RHYME CHAIN!!', line.slice(0, 16), '#c8ff29');
+  }
+  if (b.hype >= 88 || b.round >= b.maxRounds) {
+    const isWin = b.hype >= 52, r = b.rival; if (beatRingRaf) cancelAnimationFrame(beatRingRaf); activeBattle = null; AudioEngine.stop();
+    if (isWin) {
+      const v9 = ensureV9State(), zId = (STREET_ZONES[state.areaIndex]||STREET_ZONES[0]).id;
+      v9.turf[zId] = Math.max(8, Math.min(92, (v9.turf[zId]??50) + (state.profile.side==='a_side'?6:-6)));
+      const won = Math.floor(r.rewardCash * getActiveLabelBuff('hustle')); state.cash += won; state.respect += r.isBoss?42:16;
+      if (r.isBoss) handleBossRootUnlock(r); if (r.isRare && r.dropRoot) handleRareRootDrop(r);
+      gainExp(r.exp); updateHeader(); saveState(); renderStreetTab(); showToast(`🏆 勝利！ +¥${won.toLocaleString()} ＆ ${zId}支配率UP！`);
+    } else { gainExp(18); updateHeader(); saveState(); renderStreetTab(); showToast('惜敗… リズムと韻を合わせて再挑戦しよう！'); }
+    return;
+  }
+  b.round += 1; renderBattleArena(); setTimeout(() => { if (activeBattle) activeBattle.spitBurst = false; }, 240);
+}
+
+function toggleSeqPad(r, c) { const v9 = ensureV9State(); v9.seqGrid[r][c] = v9.seqGrid[r][c] ? 0 : 1; saveState(); renderStudioTab(); }
+function calcGrooveMult() { const g = ensureV9State().seqGrid, n = g.flat().reduce((a,b)=>a+b,0); return Number(((n>=8&&n<=24?1.25:1.05)*(g[1][2]&&g[1][6]?1.15:1)).toFixed(2)); }
+function toggleSeqPreview() {
+  if (seqPreviewTimer) { clearInterval(seqPreviewTimer); seqPreviewTimer = null; renderStudioTab(); return; }
+  AudioEngine.stop(); try { if (!AudioEngine.ctx) AudioEngine.ctx = new (window.AudioContext||window.webkitAudioContext)(); if (AudioEngine.ctx.state==='suspended') AudioEngine.ctx.resume(); } catch(e){return;}
+  const v9 = ensureV9State(); seqPlayStep = 0;
+  seqPreviewTimer = setInterval(() => {
+    const col = seqPlayStep % 8, ctx = AudioEngine.ctx, now = ctx.currentTime;
+    [[140,'sine',0.32],[250,'triangle',0.2],[4200,'square',0.04],[70,'sawtooth',0.14]].forEach(([hz,tp,gn], r) => {
+      if (!v9.seqGrid[r][col]) return; const o = ctx.createOscillator(), g = ctx.createGain(); o.type = tp; o.frequency.setValueAtTime(hz, now);
+      g.gain.setValueAtTime(gn, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.14); o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now + 0.15);
+    });
+    document.querySelectorAll('.seq-pad').forEach(el => el.classList.toggle('playhead', Number(el.dataset.col) === col)); seqPlayStep++;
+  }, Math.floor((60 / AudioEngine.getCurrentBpm()) * 500));
+  renderStudioTab();
+}
+
+renderStudioTab = function () {
+  const v9 = ensureV9State(), trd = rotateSnsTrendIfNeeded(), hotN = (MUSIC_ROOTS.find(r=>r.id===trd.hotRoot)?.name||'DRILL').split('//')[0].trim();
+  const owned = state.music.ownedTracks.map(id => AudioEngine.findTrack(id)).filter(Boolean), rows = [['KICK','on-kick'],['SNARE','on-snare'],['HI-HAT','on-hat'],['808','on-bass']];
+  setCockpitView(
+    `<div class="stage-monitor" style="display:flex;align-items:center;padding:10px;background:radial-gradient(circle at 65% 30%,#2c134a,#07070c);"><div style="width:120px;height:184px;flex-shrink:0;">${renderBeatPuppetHTML(state.profile,{flameLevel:seqPreviewTimer?2:1,showMicHand:true})}</div><div style="flex:1;padding-left:8px;"><div style="font-size:10px;color:var(--accent-gold);font-weight:900;">🔥 今週SNSトレンド: ${hotN} ×2.0</div><div id="mv-line" style="font-size:11.5px;font-weight:900;color:#fff;background:rgba(0,0,0,0.55);padding:7px;border-radius:8px;margin-top:4px;">リリック(${state.lyrics.length}行) × 4×8ビート(x${calcGrooveMult()})で収録！</div></div></div>`,
+    `<div class="trend-ticker-bar"><span>📈 VIRAL: ${hotN} (x2.0🔥)</span><span>GROOVE: x${calcGrooveMult()}</span></div>
+    <div class="panel"><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:10px;font-weight:900;color:var(--accent-cyan);">🎛️ 4×8 ビートシーケンサー</span><button class="btn ${seqPreviewTimer?'btn-danger':'btn-cyan'}" style="width:auto;padding:3px 8px;font-size:9px;" onclick="toggleSeqPreview()">${seqPreviewTimer?'■ 停止':'▶ 試聴'}</button></div>
+    <div class="seq-matrix">${rows.map(([l,c],ri)=>`<div class="seq-row"><span class="seq-lbl">${l}</span>${v9.seqGrid[ri].map((v,ci)=>`<div class="seq-pad ${v?c:''}" data-col="${ci}" onclick="toggleSeqPad(${ri},${ci})"></div>`).join('')}</div>`).join('')}</div>
+    <select id="studio-beat-sel" onchange="state.music.equippedTrackId=this.value;AudioEngine.playTrack(this.value);renderStudioTab()" style="margin-bottom:5px;">${owned.map(t=>`<option value="${t.id}" ${state.music.equippedTrackId===t.id?'selected':''}>♪ ${t.title} ${t.rootId===trd.hotRoot?'(🔥x2.0)':''}</option>`).join('')}</select>
+    <select id="studio-feat-sel" style="margin-bottom:5px;">${FEAT_GUESTS.filter(f=>!f.reqRoster||(state.labelRoster&&state.labelRoster.length>0)).map(f=>`<option value="${f.id}">${f.name} ${f.cost?`(¥${f.cost.toLocaleString()})`:''}</option>`).join('')}</select>
+    <input type="text" id="track-title" placeholder="新曲タイトル" style="margin-bottom:6px;"><button class="btn btn-lime" onclick="recordAndReleaseTrackV9()">🎙️ REC & VIRAL DROP</button></div>
+    ${state.tracks.slice().reverse().map(t=>`<div class="shop-item"><div class="shop-info"><h4>🎵 ${escapeHtml(t.title)}</h4><p>${t.genre} / ▶ ${t.streams.toLocaleString()}再生</p></div><button class="btn btn-cyan" style="width:auto;padding:6px 11px;" onclick="playTrackMV('${t.id}')">▶ MV</button></div>`).join('')}`
+  );
+};
+
+function recordAndReleaseTrackV9() {
+  if (seqPreviewTimer) { clearInterval(seqPreviewTimer); seqPreviewTimer = null; }
+  if (!state.lyrics.length) return showToast('先にリリックを1行以上刻んでください！');
+  const title = (document.getElementById('track-title')?.value||'').trim() || `ARCHIVE #${state.tracks.length+1}`;
+  if (LEGAL_NG_WORDS.some(w => title.includes(w))) return showToast('⚠️ NGワードが含まれています');
+  const feat = FEAT_GUESTS.find(f => f.id === document.getElementById('studio-feat-sel')?.value) || FEAT_GUESTS[0];
+  if (state.cash < feat.cost) return showToast('客演オファー料が足りません！'); state.cash -= feat.cost;
+  const beat = AudioEngine.findTrack(document.getElementById('studio-beat-sel')?.value || state.music.equippedTrackId), trd = rotateSnsTrendIfNeeded();
+  const tMult = beat.rootId === trd.hotRoot ? 2.0 : beat.rootId === trd.subRoot ? 1.4 : 1.0;
+  const streams = Math.floor((2800 + state.lyrics.length*1250 + (state.stats.lyric+state.stats.flow+state.stats.vibes)*90 + getDripValue()/280) * tMult * calcGrooveMult() * feat.mult * getActiveLabelBuff('music'));
+  const tr = { id:'trk_'+Date.now(), title: feat.id!=='none'?`${title} (${feat.name.split('（')[0]})`:title, beatId:beat.id, genre:beat.rootName, lines:state.lyrics.slice(-6).map(l=>l.text), streams };
+  state.tracks.push(tr); state.respect += Math.round(40 * tMult); gainExp(70);
+  triggerSlashCutIn(tMult>=2?'TREND VIRAL x2.0!!':'NEW DROP!!', `${streams.toLocaleString()} STREAMS`, '#ff2e93'); updateHeader(); saveState(); renderStudioTab(); playTrackMV(tr.id);
+}
+
+function cycleRosterZone(mcId) { const m = (state.labelRoster||[]).find(x=>x.id===mcId); if(!m)return; const o=['LOCAL','METRO','PORT']; m.zoneId=o[(o.indexOf(m.zoneId||'LOCAL')+1)%3]; saveState(); renderChartTab(); }
+function runApparelLotDrop() {
+  const v9 = ensureV9State(); if (!state.customOutfits?.length) return showToast('先に自社ブランド服を1着企画してください！');
+  const lot = Number(document.getElementById('af-lot-slider')?.value || 80); v9.lotCount = lot;
+  const scMult = lot <= 50 ? 2.45 : lot <= 120 ? 1.65 : 1.15, sold = Math.min(lot, 45 + Math.floor(state.respect*0.9 + state.stats.vibes*2.4)), rev = sold * Math.floor(14000 * scMult);
+  state.cash += rev; state.respect += sold>=lot?30:16; gainExp(42); advanceWorldTime();
+  triggerSlashCutIn(sold>=lot?'INSTANT SOLD OUT!!':'DROP SALES!!', `${sold}/${lot}着 +¥${rev.toLocaleString()}`, '#c8ff29'); renderChartTab();
+}
+
+const _v8Chart = renderChartTab;
+renderChartTab = function () {
+  const v9 = ensureV9State(); _v8Chart();
+  const stg = document.querySelector('#stage-view .stage-monitor');
+  if (stg) { stg.style.height = '238px'; stg.insertAdjacentHTML('beforeend', `<div class="turf-map-row">${['LOCAL','METRO','PORT'].map(z=>{const a=v9.turf[z]??50;return `<div class="turf-node"><div style="font-size:8.5px;color:#00f0ff;font-weight:900;">${z}</div><div style="font-size:9px;color:#fff;">A:${a}% / B:${100-a}%</div></div>`;}).join('')}</div>`); }
+  const deck = document.getElementById('command-deck'); if (!deck || chartSubTab !== 'grow') return;
+  if (state.growClass === 'label_owner' && state.labelRoster?.length) deck.insertAdjacentHTML('beforeend', `<div class="panel"><div class="sec-title" style="margin-top:0;"><span>🗺️ 所属MC エリア縄張り派遣</span></div>${state.labelRoster.map(m=>`<div class="shop-item"><div class="shop-info"><h4>🎤 ${escapeHtml(m.name)}</h4><p>支配率+2%/T</p></div><button class="btn btn-cyan" style="width:auto;padding:5px 9px;" onclick="cycleRosterZone('${m.id}')">📍 ${m.zoneId||'LOCAL'}</button></div>`).join('')}</div>`);
+  if (state.growClass === 'apparel_founder') deck.insertAdjacentHTML('beforeend', `<div class="panel"><div class="sec-title" style="margin-top:0;"><span>🔥 生産ロット数＆プレ値シム</span></div><div style="font-size:10px;display:flex;justify-content:space-between;"><span>ロット: <b id="lot-lbl">${v9.lotCount||80}着</b></span><span style="color:var(--accent-lime);">希少プレ値連動</span></div><input type="range" id="af-lot-slider" class="lot-slider" min="20" max="240" step="10" value="${v9.lotCount||80}" oninput="document.getElementById('lot-lbl').textContent=this.value+'着'"><button class="btn btn-gold" onclick="runApparelLotDrop()">🚀 抽選DROP実行</button></div>`);
+};
+
+ensureV9State();
+renderTitleScreen();
+</script>
+</body>
+</html>

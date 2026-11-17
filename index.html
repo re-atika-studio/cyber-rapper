@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>CYBER RAPPER // LOST ARCHIVE RPG (v8.0)</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app-shell">
+  <div id="shutter"></div>
+  <div id="toast"></div>
+  <div id="cutin-layer"></div>
+  <div id="fx-layer"></div>
+
+  <!-- Graffiti Tagging Start Screen (Always Shown on Launch) -->
+  <div id="title-screen"></div>
+
+  <!-- Persistent MMO Top HUD (SIDE / SAVE / BAG / CARD / SETTINGS) -->
+  <div class="topbar" id="topbar" style="display:none;">
+    <div class="hud-top-row">
+      <div class="hud-player-chip" onclick="openCardModal()" title="ステータス・3Dホロカードを開く">
+        <span class="hud-side-badge" id="ui-side">A-SIDE</span>
+        <span class="hud-lv-badge" id="ui-lv">LV.1</span>
+        <span class="hud-mc-name" id="ui-mc-name">LUNA</span>
+      </div>
+      <div class="hud-quick-btns">
+        <button class="hud-btn hud-btn-save" onclick="openSaveModal()">💾 セーブ</button>
+        <button class="hud-btn hud-btn-bag" onclick="openBagModal()">🎒 持ち物</button>
+        <button class="hud-btn hud-btn-card" onclick="openCardModal()">🃏 カード</button>
+        <button class="hud-btn" onclick="openSysModal()">⚙️</button>
+      </div>
+    </div>
+    <div class="hud-sub-row">
+      <div class="currency-bar">
+        <span class="cur-cash" id="ui-cash">¥0</span>
+        <span class="cur-sync" id="ui-sync">💿1</span>
+        <span class="cur-rep" id="ui-rep">👑0</span>
+      </div>
+      <div class="world-loc" id="ui-loc" onclick="quickManualSave()" title="タップでクイックセーブ">📍LOCAL / 🕒NIGHT</div>
+    </div>
+  </div>
+
+  <!-- Unified 2-Zone Cockpit (Upper Visual Stage + Lower Thumb Deck) -->
+  <div id="cockpit-body">
+    <div id="stage-view"></div>
+    <div id="command-deck"></div>
+  </div>
+
+  <!-- Fixed 5-Tab Bottom Navigation (100dvh Safe Area Protected) -->
+  <div id="bottom-nav" style="display:none;">
+    <button class="nav-btn active" data-tab="street" onclick="switchTab('street')">
+      <span class="ico">🗺️</span><span>街探索</span>
+    </button>
+    <button class="nav-btn" data-tab="hustle" onclick="switchTab('hustle')">
+      <span class="ico">🎤</span><span>鍛錬・職</span>
+    </button>
+    <button class="nav-btn" data-tab="shop" onclick="switchTab('shop')">
+      <span class="ico">🛒</span><span>EC・レコード</span>
+    </button>
+    <button class="nav-btn" data-tab="studio" onclick="switchTab('studio')">
+      <span class="ico">🎛️</span><span>スタジオ</span>
+    </button>
+    <button class="nav-btn" data-tab="chart" onclick="switchTab('chart')">
+      <span class="ico">⚡</span><span>グロウ・番付</span>
+    </button>
+  </div>
+
+  <!-- Global MMO Modal Overlay (SAVE / BAG / CARD / CLOUD / SYSTEM) -->
+  <div id="modal-layer"></div>
+</div>
+
+<canvas id="export-canvas" width="840" height="1180" style="display:none;"></canvas>
+
+<script src="data_master.js"></script>
+<script src="avatar_parts.js"></script>
+<script src="avatar_card.js"></script>
+<script src="street_rpg.js"></script>
+<script src="grow_cloud.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
