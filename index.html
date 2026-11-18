@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>CYBER RAPPER // LOST ARCHIVE RPG (v9.0 2.5D &amp; BEAT PUPPET)</title>
+  <title>CYBER RAPPER // LOST ARCHIVE RPG (v9.5)</title>
   <link rel="stylesheet" href="style.css">
   <style id="v9-style">
     :root { --beat-sec: 0.545s; --half-beat-sec: 0.272s; }
@@ -61,13 +61,15 @@
 <body>
 <div id="app-shell">
   <div id="shutter"></div><div id="toast"></div><div id="cutin-layer"></div><div id="fx-layer"></div>
+  <div id="op-movie-layer"></div>
   <div id="title-screen"></div>
   <div class="topbar" id="topbar" style="display:none;">
     <div class="hud-top-row">
-      <div class="hud-player-chip" onclick="openCardModal()" title="ステータス・3Dホロカードを開く">
+      <div class="hud-player-chip" onclick="openCardModal()" title="ステータス・3Dホロカードを見る">
         <span class="hud-side-badge" id="ui-side">A-SIDE</span><span class="hud-lv-badge" id="ui-lv">LV.1</span><span class="hud-mc-name" id="ui-mc-name">LUNA</span>
       </div>
       <div class="hud-quick-btns">
+        <button class="hud-btn" style="border-color:#ffc83b;color:#ffc83b;" onclick="openDjMyouHub()">🎧 上限</button>
         <button class="hud-btn hud-btn-save" onclick="openSaveModal()">💾 セーブ</button>
         <button class="hud-btn hud-btn-bag" onclick="openBagModal()">🎒 持ち物</button>
         <button class="hud-btn hud-btn-card" onclick="openCardModal()">🃏 カード</button>
@@ -174,7 +176,7 @@ const Street25DEngine = {
       const sg = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 1.32), new THREE.MeshBasicMaterial({ map: this.makeTex(lm.sign, lm.tag, lm.color, false), side: THREE.DoubleSide })); sg.position.set(wp.x, 3.1, wp.z); sc.add(sg);
       const rg = new THREE.Mesh(new THREE.RingGeometry(0.95, 1.25, 24), new THREE.MeshBasicMaterial({ color: lm.color, side: THREE.DoubleSide, transparent: true, opacity: 0.72 })); rg.rotation.x = -Math.PI / 2; rg.position.set(wp.x, 0.04, wp.z); sc.add(rg);
     });
-    this.rivalMeshes = [{ x:-2.5, z:7, l:'🎤 RIVAL MC', c:'#ff2e93', s:1.4 }, { x:2.5, z:-7, l:'⚡ ASSASSIN', c:'#ffc83b', s:-1.7 }].map(rv => {
+    this.rivalMeshes = [{ x:-2.5, z:7, l:'🎤 RIVAL MC', c:'#ff2e93', s:1.4 }, { x:2.5, z:-7, l:'⚡ LEGEND', c:'#ffc83b', s:-1.7 }].map(rv => {
       const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.makeTex(rv.l, '', rv.c, true), transparent: true })); sp.scale.set(1.7, 2.35, 1); sp.position.set(rv.x, 1.18, rv.z); sc.add(sp);
       return { sprite: sp, baseX: rv.x, z: rv.z, speed: rv.s };
     });
@@ -237,7 +239,7 @@ const FLOW_SKILLS = [
 const FEAT_GUESTS = [
   { id: 'none', name: 'ソロ収録（客演なし）', cost: 0, mult: 1.0 },
   { id: 'lil_neo', name: 'Feat. LIL NEO（新鋭トラッパー）', cost: 15000, mult: 1.28 },
-  { id: 'rina_x', name: 'Feat. RINA-X（フィメールMC）', cost: 28000, mult: 1.48 },
+  { id: 'rina_x', name: 'Feat. RINA-X（ギャルMC）', cost: 28000, mult: 1.48 },
   { id: 'roster', name: 'Feat. 自社レーベル所属MC（¥0連携）', cost: 0, mult: 1.38, reqRoster: true }
 ];
 let beatRingRaf = null, beatRingStart = performance.now(), seqPreviewTimer = null, seqPlayStep = -1;
@@ -290,14 +292,14 @@ function updateStreetHudDOM() {
 function renderStreetContextPanelHTML() {
   const zone = STREET_ZONES[state.areaIndex] || STREET_ZONES[0], ms = ensureMapState(), spot = zone.landmarks.find(l => l.x === ms.x && l.y === ms.y);
   if (spot) return `<div style="font-size:11.5px;font-weight:900;color:${spot.color};margin-bottom:2px;">${spot.ico} ${spot.name}</div><div style="font-size:9.5px;color:var(--text-sub);margin-bottom:6px;">${spot.desc}</div><button class="btn btn-lime" style="padding:8px;font-size:11px;" onclick="${spot.fn}">${spot.act}</button>`;
-  return `<div style="font-size:11px;font-weight:900;color:var(--accent-cyan);margin-bottom:3px;">🕹️ 2.5D ネオン路地フリー探索中</div><div style="font-size:9px;color:var(--text-sub);margin-bottom:6px;">左スティックで立体路地を移動！敵MC接近でHEAT上昇＆バトル突入！</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;"><button class="btn btn-gold" style="padding:6px;font-size:9.5px;" onclick="rollJobFlyerSpot()">📄 求人ガチャ</button><button class="btn btn-danger" style="padding:6px;font-size:9.5px;" onclick="triggerStreetHeatEncounter()">⚡ 野良MC戦</button></div>`;
+  return `<div style="font-size:11px;font-weight:900;color:var(--accent-cyan);margin-bottom:3px;">🕹️ 2.5D ネオン路地フリー探索中</div><div style="font-size:9px;color:var(--text-sub);margin-bottom:5px;">左スティックで雨濡れ路地を移動！敵MC接近でHEAT上昇＆バトル突入！</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px;"><button class="btn btn-gold" style="padding:6px;font-size:9.5px;" onclick="rollJobFlyerSpot()">📋 求人ビラ</button><button class="btn btn-danger" style="padding:6px;font-size:9.5px;" onclick="triggerStreetHeatEncounter()">⚡ 野良MC戦</button></div><button class="btn btn-cyan" style="padding:6px;font-size:9.5px;" onclick="openDjMyouHub()">🎧 DJ MYOU // レジェンド＆『上限』</button>`;
 }
 function onStreetGridChanged() {
   updateStreetHudDOM(); const box = document.getElementById('street-ctx-box'); if (box) box.innerHTML = renderStreetContextPanelHTML();
   if (!state.profile.hasQuitJob && !pendingJobOffer && Math.random() < 0.16) rollJobFlyerSpot(); else saveState();
 }
 function rollJobFlyerSpot() {
-  if (state.profile.hasQuitJob) return showToast('🔥 辞表提出済み！専業MCとして音楽とシノギで稼ごう！');
+  if (state.profile.hasQuitJob) return showToast('🔥 辞表提出済み！専業MCとして音楽とシノギに生きろ！');
   const r = Math.random(), tier = r < 0.15 ? 3 : r < 0.50 ? 2 : 1, pool = STREET_JOBS.filter(j => j.rarity === tier);
   pendingJobOffer = pool[Math.floor(Math.random() * pool.length)];
   triggerSlashCutIn(tier===3?'SSR SCOUT!!':'JOB FLYER!!', pendingJobOffer.name, tier===3?'#ffc83b':'#00f0ff'); Street25DEngine.pause(); renderStreetTab();
@@ -338,7 +340,7 @@ function startBeatRingLoop() {
 launchBattle = function (rv) {
   Street25DEngine.pause(); AudioEngine.playEquipped(); beatRingStart = performance.now();
   triggerSlashCutIn(rv.isRare?'RARE ENCOUNTER!!':'VERSUS!!', `VS ${rv.name}`, rv.isRare?'#ffc83b':'#ff2e93');
-  activeBattle = { rival: rv, round: 1, maxRounds: rv.isBoss||rv.isRare?4:3, hype: 52, rhymeChain: 0, armedIdx: 0, activeSkill: null, nextSpitBoost: 1, cooldowns: {}, spitBurst: false, choices: [...rv.answers].sort(()=>Math.random()-0.5), lastLog: `♪ ${AudioEngine.getCurrentBpm()} BPM // JUST SPITを狙え！` };
+  activeBattle = { rival: rv, round: 1, maxRounds: rv.isBoss||rv.isRare||rv.isLegend?3:2, hype: 52, rhymeChain: 0, armedIdx: 0, activeSkill: null, nextSpitBoost: 1, cooldowns: {}, spitBurst: false, choices: [...rv.answers].sort(()=>Math.random()-0.5), lastLog: `♪ ${AudioEngine.getCurrentBpm()} BPM // JUST SPITを狙え！` };
   renderBattleArena();
 };
 function selectArmedChoice(i) { if (!activeBattle) return; activeBattle.armedIdx = i; document.querySelectorAll('.answer-choice').forEach((el, idx) => el.classList.toggle('armed', idx === i)); }
@@ -433,7 +435,7 @@ renderStudioTab = function () {
   setCockpitView(
     `<div class="stage-monitor" style="display:flex;align-items:center;padding:10px;background:radial-gradient(circle at 65% 30%,#2c134a,#07070c);"><div style="width:120px;height:184px;flex-shrink:0;">${renderBeatPuppetHTML(state.profile,{flameLevel:seqPreviewTimer?2:1,showMicHand:true})}</div><div style="flex:1;padding-left:8px;"><div style="font-size:10px;color:var(--accent-gold);font-weight:900;">🔥 今週SNSトレンド: ${hotN} ×2.0</div><div id="mv-line" style="font-size:11.5px;font-weight:900;color:#fff;background:rgba(0,0,0,0.55);padding:7px;border-radius:8px;margin-top:4px;">リリック(${state.lyrics.length}行) × 4×8ビート(x${calcGrooveMult()})で収録！</div></div></div>`,
     `<div class="trend-ticker-bar"><span>📈 VIRAL: ${hotN} (x2.0🔥)</span><span>GROOVE: x${calcGrooveMult()}</span></div>
-    <div class="panel"><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:10px;font-weight:900;color:var(--accent-cyan);">🎛️ 4×8 ビートシーケンサー</span><button class="btn ${seqPreviewTimer?'btn-danger':'btn-cyan'}" style="width:auto;padding:3px 8px;font-size:9px;" onclick="toggleSeqPreview()">${seqPreviewTimer?'■ 停止':'▶ 試聴'}</button></div>
+    <div class="panel"><div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="font-size:10px;font-weight:900;color:var(--accent-cyan);">🎛️ 4×8 ビートシーケンサー</span><button class="btn ${seqPreviewTimer?'btn-danger':'btn-cyan'}" style="width:auto;padding:3px 8px;font-size:9px;" onclick="toggleSeqPreview()">${seqPreviewTimer?'⏹ 停止':'▶ 試聴'}</button></div>
     <div class="seq-matrix">${rows.map(([l,c],ri)=>`<div class="seq-row"><span class="seq-lbl">${l}</span>${v9.seqGrid[ri].map((v,ci)=>`<div class="seq-pad ${v?c:''}" data-col="${ci}" onclick="toggleSeqPad(${ri},${ci})"></div>`).join('')}</div>`).join('')}</div>
     <select id="studio-beat-sel" onchange="state.music.equippedTrackId=this.value;AudioEngine.playTrack(this.value);renderStudioTab()" style="margin-bottom:5px;">${owned.map(t=>`<option value="${t.id}" ${state.music.equippedTrackId===t.id?'selected':''}>♪ ${t.title} ${t.rootId===trd.hotRoot?'(🔥x2.0)':''}</option>`).join('')}</select>
     <select id="studio-feat-sel" style="margin-bottom:5px;">${FEAT_GUESTS.filter(f=>!f.reqRoster||(state.labelRoster&&state.labelRoster.length>0)).map(f=>`<option value="${f.id}">${f.name} ${f.cost?`(¥${f.cost.toLocaleString()})`:''}</option>`).join('')}</select>
@@ -444,11 +446,11 @@ renderStudioTab = function () {
 
 function recordAndReleaseTrackV9() {
   if (seqPreviewTimer) { clearInterval(seqPreviewTimer); seqPreviewTimer = null; }
-  if (!state.lyrics.length) return showToast('先にリリックを1行以上刻んでください！');
+  if (!state.lyrics.length) return showToast('先にリリックを1行以上書いてください！');
   const title = (document.getElementById('track-title')?.value||'').trim() || `ARCHIVE #${state.tracks.length+1}`;
   if (LEGAL_NG_WORDS.some(w => title.includes(w))) return showToast('⚠️ NGワードが含まれています');
   const feat = FEAT_GUESTS.find(f => f.id === document.getElementById('studio-feat-sel')?.value) || FEAT_GUESTS[0];
-  if (state.cash < feat.cost) return showToast('客演オファー料が足りません！'); state.cash -= feat.cost;
+  if (state.cash < feat.cost) return showToast('客演ギャラ資金が足りません！'); state.cash -= feat.cost;
   const beat = AudioEngine.findTrack(document.getElementById('studio-beat-sel')?.value || state.music.equippedTrackId), trd = rotateSnsTrendIfNeeded();
   const tMult = beat.rootId === trd.hotRoot ? 2.0 : beat.rootId === trd.subRoot ? 1.4 : 1.0;
   const streams = Math.floor((2800 + state.lyrics.length*1250 + (state.stats.lyric+state.stats.flow+state.stats.vibes)*90 + getDripValue()/280) * tMult * calcGrooveMult() * feat.mult * getActiveLabelBuff('music'));
@@ -472,12 +474,13 @@ renderChartTab = function () {
   const stg = document.querySelector('#stage-view .stage-monitor');
   if (stg) { stg.style.height = '238px'; stg.insertAdjacentHTML('beforeend', `<div class="turf-map-row">${['LOCAL','METRO','PORT'].map(z=>{const a=v9.turf[z]??50;return `<div class="turf-node"><div style="font-size:8.5px;color:#00f0ff;font-weight:900;">${z}</div><div style="font-size:9px;color:#fff;">A:${a}% / B:${100-a}%</div></div>`;}).join('')}</div>`); }
   const deck = document.getElementById('command-deck'); if (!deck || chartSubTab !== 'grow') return;
-  if (state.growClass === 'label_owner' && state.labelRoster?.length) deck.insertAdjacentHTML('beforeend', `<div class="panel"><div class="sec-title" style="margin-top:0;"><span>🗺️ 所属MC エリア縄張り派遣</span></div>${state.labelRoster.map(m=>`<div class="shop-item"><div class="shop-info"><h4>🎤 ${escapeHtml(m.name)}</h4><p>支配率+2%/T</p></div><button class="btn btn-cyan" style="width:auto;padding:5px 9px;" onclick="cycleRosterZone('${m.id}')">📍 ${m.zoneId||'LOCAL'}</button></div>`).join('')}</div>`);
-  if (state.growClass === 'apparel_founder') deck.insertAdjacentHTML('beforeend', `<div class="panel"><div class="sec-title" style="margin-top:0;"><span>🔥 生産ロット数＆プレ値シム</span></div><div style="font-size:10px;display:flex;justify-content:space-between;"><span>ロット: <b id="lot-lbl">${v9.lotCount||80}着</b></span><span style="color:var(--accent-lime);">希少プレ値連動</span></div><input type="range" id="af-lot-slider" class="lot-slider" min="20" max="240" step="10" value="${v9.lotCount||80}" oninput="document.getElementById('lot-lbl').textContent=this.value+'着'"><button class="btn btn-gold" onclick="runApparelLotDrop()">🚀 抽選DROP実行</button></div>`);
+  if (state.growClass === 'label_owner' && state.labelRoster?.length) deck.insertAdjacentHTML('beforeend', `<div class="panel"><div class="sec-title" style="margin-top:0;"><span>🗺️ 所属MC エリア派遣＆縄張り</span></div>${state.labelRoster.map(m=>`<div class="shop-item"><div class="shop-info"><h4>🎤 ${escapeHtml(m.name)}</h4><p>支配率+2%/T</p></div><button class="btn btn-cyan" style="width:auto;padding:5px 9px;" onclick="cycleRosterZone('${m.id}')">📍 ${m.zoneId||'LOCAL'}</button></div>`).join('')}</div>`);
+  if (state.growClass === 'apparel_founder') deck.insertAdjacentHTML('beforeend', `<div class="panel"><div class="sec-title" style="margin-top:0;"><span>🔥 生産ロット数＆プレ値シム</span></div><div style="font-size:10px;display:flex;justify-content:space-between;"><span>ロット: <b id="lot-lbl">${v9.lotCount||80}着</b></span><span style="color:var(--accent-lime);">少量プレ値運用</span></div><input type="range" id="af-lot-slider" class="lot-slider" min="20" max="240" step="10" value="${v9.lotCount||80}" oninput="document.getElementById('lot-lbl').textContent=this.value+'着'"><button class="btn btn-gold" onclick="runApparelLotDrop()">🚀 抽選DROP実行</button></div>`);
 };
 
 ensureV9State();
-renderTitleScreen();
 </script>
+<script src="legends_jougen.js"></script>
+<script src="title_op.js"></script>
 </body>
 </html>
