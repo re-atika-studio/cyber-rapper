@@ -1,22 +1,20 @@
 /* =========================================================================
-   CYBER RAPPER // v9.4 EDITORIAL TITLE SCREEN & OPENING MOVIE ENGINE
+   CYBER RAPPER // v10.1 EDITORIAL TITLE SCREEN & OPENING MOVIE ENGINE
+   - Uses Verified title-logo-base.png (Zero title_logo_v2 404/503 Errors)
    - Zero Face-Overlap 3-Zone Poster Layout (Dual KING & DIVA High-Res Base)
-   - Sleek Liquid-Chrome & Laser-Slash Typography + Minimalist Glass UI
-   - Hybrid <video> (assets/video/op_intro.mp4) + 4-Cut Animatic Prologue
+   - Animatic 4-Cut Prologue (Opt-in <video> when ENABLE_EXTERNAL_OP_VIDEO=true)
    ========================================================================= */
 
 const OP_VIDEO_CANDIDATES = [
   'assets/video/op_intro.mp4',
-  'assets/video/op_intro.webm',
-  'assets/video/op_movie.mp4',
-  'op_intro.mp4'
+  'assets/video/op_intro.webm'
 ];
 
 const OP_PROLOGUE_CUTS = [
   {
     id: '01',
     tag: 'ARCHIVE 01 // REBUILT TOKYO',
-    lines: '一度滅び、再復興した地球。\n唯一失われたのは——旧時代の「生の音楽」の記憶。',
+    lines: '一度滅び、再構築された都市。\n唯一失われたのは——旧世代の「生の音楽」の記憶。',
     bg: 'bg_metro_station.jpg',
     accent: '#00f0ff',
     mode: 'city'
@@ -24,7 +22,7 @@ const OP_PROLOGUE_CUTS = [
   {
     id: '02',
     tag: 'ARCHIVE 02 // MEMORY DISC',
-    lines: '路地裏に眠る旧文明の記憶媒体《MEMORY ARCHIVE》。\nそれがストリートの運命を塗り替える。',
+    lines: '路地裏に眠る旧文明の記憶媒体『MEMORY ARCHIVE』。\nそれがストリートの鼓動を呼び覚ます。',
     bg: 'bg_record_shop.jpg',
     accent: '#ffc83b',
     mode: 'disc'
@@ -32,7 +30,7 @@ const OP_PROLOGUE_CUTS = [
   {
     id: '03',
     tag: 'ARCHIVE 03 // NEURAL SOCKET SYNC',
-    lines: '神経接続（SYNC）完了。\n失われたビートが、再び血を揺らす。',
+    lines: '神経接続（SYNC）完了。\n失われたビートが、再び脈を揺らす。',
     bg: 'bg_studio_booth.jpg',
     accent: '#ff2e93',
     mode: 'sync'
@@ -61,13 +59,18 @@ const OpMovieEngine = {
 
   preloadAssets() {
     if (typeof AssetImageCache === 'undefined') return;
-    ['bg_street_cypher.jpg', 'bg_metro_station.jpg', 'bg_record_shop.jpg', 'bg_studio_booth.jpg',
+    AssetImageCache.resolveTitleLogo();
+    AssetImageCache.resolveStageBg('bg_street_cypher.jpg');
+    AssetImageCache.resolveBaseSprite(false);
+    AssetImageCache.resolveBaseSprite(true);
+  },
+
+  preloadPrologueCuts() {
+    if (typeof AssetImageCache === 'undefined') return;
+    ['bg_metro_station.jpg', 'bg_record_shop.jpg', 'bg_studio_booth.jpg',
      'cutin_eyes_king.png', 'cutin_eyes_diva.png', 'fx_flame_cyan.png', 'fx_flame_pink.png'].forEach(p => {
       AssetImageCache.resolve(p, { cutout: false });
     });
-    AssetImageCache.resolve('title_logo_v2.png', { logoMode: true, cutout: false });
-    AssetImageCache.resolveBaseSprite(false);
-    AssetImageCache.resolveBaseSprite(true);
   },
 
   startSynthPulse() {
@@ -170,6 +173,7 @@ const OpMovieEngine = {
   play(opts) {
     const o = opts || {};
     this.stopCleanupOnly();
+    this.preloadPrologueCuts();
     if (typeof stopBeatPlayer === 'function') stopBeatPlayer();
     if (typeof AudioEngine !== 'undefined') AudioEngine.stop();
     if (typeof Street25DEngine !== 'undefined') Street25DEngine.pause();
@@ -191,7 +195,7 @@ const OpMovieEngine = {
     layer.innerHTML = `
       <div class="op94-scan-entry"></div>
       <div id="op94-fallback-stage" class="op94-fallback-stage"></div>
-      <video id="op94-video" class="op94-video" playsinline webkit-playsinline preload="auto"></video>
+      <video id="op94-video" class="op94-video" playsinline webkit-playsinline preload="none" style="display:none;"></video>
       <div class="op94-rain"></div>
       <div class="op94-scanlines"></div>
       <div id="op94-glitch-flash" class="op94-glitch-flash"></div>
@@ -214,7 +218,7 @@ const OpMovieEngine = {
 
     this.renderCut(0);
     this.startSynthPulse();
-    this.tryMountExternalVideo();
+    if (window.ENABLE_EXTERNAL_OP_VIDEO) this.tryMountExternalVideo();
 
     const tick = (now) => {
       if (!this.active) return;
@@ -238,6 +242,7 @@ const OpMovieEngine = {
   tryMountExternalVideo() {
     const vid = document.getElementById('op94-video');
     if (!vid) return;
+    vid.style.display = '';
     let idx = 0;
     const tryNext = () => {
       if (!this.active || idx >= OP_VIDEO_CANDIDATES.length) {
@@ -308,15 +313,17 @@ function toggleTitleMute() {
 }
 
 function buildModernEditorialLogoHTML(accentHex, subHex) {
-  const v2Logo = typeof AssetImageCache !== 'undefined'
-    ? (AssetImageCache.resolve('title_logo_v2.png', { logoMode: true, cutout: false }) ||
-       (state.useLegacyLogoImg ? AssetImageCache.resolveTitleLogo() : null))
+  const logoUrl = typeof AssetImageCache !== 'undefined'
+    ? AssetImageCache.resolveTitleLogo(() => {
+        const ts = document.getElementById('title-screen');
+        if (ts && ts.classList.contains('active')) renderTitleScreen();
+      })
     : null;
-  if (v2Logo) {
-    const scr = (state.useLegacyLogoImg && AssetImageCache.needsLogoScreenBlend()) ? 'mix-blend-mode:screen;' : '';
+  if (logoUrl) {
+    const scr = AssetImageCache.needsLogoScreenBlend() ? 'mix-blend-mode:screen;' : '';
     return `<div class="ts94-brand-inner">
-      <img src="${v2Logo}" alt="CYBER RAPPER" class="ts94-custom-logo-img" style="${scr}">
-      <div class="ts94-brand-sub">A-SIDE  ×  B-SIDE  //  LOST ARCHIVE RPG</div>
+      <img src="${logoUrl}" alt="CYBER RAPPER" class="ts94-custom-logo-img" style="max-width:340px;max-height:142px;filter:drop-shadow(0 0 18px ${accentHex || '#00f0ff'}88);${scr}">
+      <div class="ts94-brand-sub">A-SIDE  ×  B-SIDE  //  LOST ARCHIVE RPG v10</div>
     </div>`;
   }
   return `<div class="ts94-brand-inner">
@@ -324,15 +331,10 @@ function buildModernEditorialLogoHTML(accentHex, subHex) {
     <svg class="ts94-chrome-svg" viewBox="0 0 400 84" aria-label="CYBER RAPPER">
       <defs>
         <linearGradient id="ts94Chrome" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#ffffff"/>
-          <stop offset="44%" stop-color="#dbe4f3"/>
-          <stop offset="52%" stop-color="#64748b"/>
-          <stop offset="100%" stop-color="#f8fafc"/>
+          <stop offset="0%" stop-color="#ffffff"/><stop offset="44%" stop-color="#dbe4f3"/><stop offset="52%" stop-color="#64748b"/><stop offset="100%" stop-color="#f8fafc"/>
         </linearGradient>
         <linearGradient id="ts94Slash" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stop-color="${accentHex}"/>
-          <stop offset="55%" stop-color="#ffffff"/>
-          <stop offset="100%" stop-color="${subHex}"/>
+          <stop offset="0%" stop-color="${accentHex}"/><stop offset="55%" stop-color="#ffffff"/><stop offset="100%" stop-color="${subHex}"/>
         </linearGradient>
       </defs>
       <g transform="skewX(-10) translate(12,0)">
@@ -518,7 +520,7 @@ function installEditorialTitleAndOp() {
       <div class="ts94-vignette"></div>
 
       <div class="ts94-top-hud">
-        <div class="ts94-status-tag"><span class="ts94-live-dot" style="background:${accent};box-shadow:0 0 8px ${accent};"></span><span>ARCHIVE OS // v9.4</span></div>
+        <div class="ts94-status-tag"><span class="ts94-live-dot" style="background:${accent};box-shadow:0 0 8px ${accent};"></span><span>ARCHIVE OS // v10.1</span></div>
         <button class="ts94-sound-pill" onclick="toggleTitleMute()">${state.soundMuted ? 'SOUND: OFF' : 'SOUND: ON'}</button>
       </div>
 
@@ -540,7 +542,7 @@ function installEditorialTitleAndOp() {
   };
 
   window.startNewGameFromTitle = function (hasExisting) {
-    if (hasExisting && !confirm('新しくキャラクターを作成しますか？（既存のセーブスロットは保持されます）')) return;
+    if (hasExisting && !confirm('新しくキャラクターを作成しますか？（手動のセーブスロットは保持されます）')) return;
     const keepSafe = state.adSafePx ?? 56, keepMute = state.soundMuted, keepLogo = !!state.useLegacyLogoImg;
     const keepLabels = state.worldLabels || [], keepLegends = state.legendArchive || [], keepCloud = state.cloud;
     state = createFreshState();
@@ -563,7 +565,6 @@ function installEditorialTitleAndOp() {
         <div class="panel">
           <div style="font-size:10.5px;font-weight:900;margin-bottom:6px;color:var(--accent-cyan);">🎬 タイトル＆プロローグ設定</div>
           <button class="btn btn-cyan" style="margin-bottom:6px;" onclick="closeModal();playOpeningMovie({ replayOnly: true })">▶ オープニングムービーを再生</button>
-          <button class="btn" onclick="state.useLegacyLogoImg=!state.useLegacyLogoImg;saveState();closeModal();renderTitleScreen()">✨ ロゴ表示切替：${state.useLegacyLogoImg ? '画像ロゴ優先中' : 'モダンクローム（標準）'}</button>
         </div>
       `);
     };
@@ -573,5 +574,4 @@ function installEditorialTitleAndOp() {
   renderTitleScreen();
 }
 
-installEditorialTitleAndOp();
 window.addEventListener('DOMContentLoaded', installEditorialTitleAndOp);
