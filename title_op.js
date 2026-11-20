@@ -1,20 +1,27 @@
-/* =========================================================================
-   CYBER RAPPER // v10.1 EDITORIAL TITLE SCREEN & OPENING MOVIE ENGINE
+/* ============================================================================
+   CYBER RAPPER // v10.2 EDITORIAL TITLE SCREEN & OPENING MOVIE ENGINE
    - Uses Verified title-logo-base.png (Zero title_logo_v2 404/503 Errors)
    - Zero Face-Overlap 3-Zone Poster Layout (Dual KING & DIVA High-Res Base)
    - Animatic 4-Cut Prologue (Opt-in <video> when ENABLE_EXTERNAL_OP_VIDEO=true)
-   ========================================================================= */
+   - Dedicated Opening Theme BGM Engine (assets/audio/op_theme.mp3 + Synth Fallback)
+   ============================================================================ */
 
 const OP_VIDEO_CANDIDATES = [
   'assets/video/op_intro.mp4',
   'assets/video/op_intro.webm'
 ];
 
+const OP_BGM_CANDIDATES = [
+  'assets/audio/op_theme.mp3',
+  'assets/audio/op_theme.ogg',
+  'assets/audio/op_theme.m4a'
+];
+
 const OP_PROLOGUE_CUTS = [
   {
     id: '01',
     tag: 'ARCHIVE 01 // REBUILT TOKYO',
-    lines: '一度滅び、再構築された都市。\n唯一失われたのは——旧世代の「生の音楽」の記憶。',
+    lines: '一度滅び、再構築された都市。\n唯一失われたのは――旧世界の「生の音楽」の記憶。',
     bg: 'bg_metro_station.jpg',
     accent: '#00f0ff',
     mode: 'city'
@@ -30,7 +37,7 @@ const OP_PROLOGUE_CUTS = [
   {
     id: '03',
     tag: 'ARCHIVE 03 // NEURAL SOCKET SYNC',
-    lines: '神経接続（SYNC）完了。\n失われたビートが、再び脈を揺らす。',
+    lines: '神経接続（SYNC）完了。\n失われたビートが、再び脈を打ちだす。',
     bg: 'bg_studio_booth.jpg',
     accent: '#ff2e93',
     mode: 'sync'
@@ -45,6 +52,149 @@ const OP_PROLOGUE_CUTS = [
   }
 ];
 
+const OpAudioPlayer = {
+  audio: null,
+  srcIdx: 0,
+  failed: false,
+  fadeTimer: null,
+  unlockHandler: null,
+  baseVolume: 0.82,
+  pendingFallback: null,
+
+  isMuted() {
+    return typeof state !== 'undefined' && !!state.soundMuted;
+  },
+
+  clearFade() {
+    if (this.fadeTimer) {
+      clearInterval(this.fadeTimer);
+      this.fadeTimer = null;
+    }
+  },
+
+  clearUnlock() {
+    if (this.unlockHandler) {
+      document.removeEventListener('pointerdown', this.unlockHandler, true);
+      document.removeEventListener('keydown', this.unlockHandler, true);
+      this.unlockHandler = null;
+    }
+  },
+
+  ensureAudio() {
+    if (this.audio || this.failed) return this.audio;
+    const a = new Audio();
+    a.preload = 'auto';
+    a.volume = this.baseVolume;
+    a.addEventListener('error', () => {
+      this.srcIdx++;
+      if (this.srcIdx < OP_BGM_CANDIDATES.length) {
+        a.src = OP_BGM_CANDIDATES[this.srcIdx];
+        a.load();
+      } else {
+        this.failed = true;
+        if (typeof this.pendingFallback === 'function') {
+          const fb = this.pendingFallback;
+          this.pendingFallback = null;
+          fb();
+        }
+      }
+    });
+    a.src = OP_BGM_CANDIDATES[this.srcIdx];
+    this.audio = a;
+    return a;
+  },
+
+  preload() {
+    try { this.ensureAudio(); } catch (e) {}
+  },
+
+  play(opts) {
+    const o = opts || {};
+    this.clearFade();
+    this.clearUnlock();
+    this.pendingFallback = typeof o.onFallback === 'function' ? o.onFallback : null;
+
+    if (this.isMuted()) return false;
+    if (this.failed) {
+      if (this.pendingFallback) {
+        const fb = this.pendingFallback;
+        this.pendingFallback = null;
+        fb();
+      }
+      return false;
+    }
+
+    const a = this.ensureAudio();
+    if (!a) return false;
+    a.loop = !!o.loop;
+    a.volume = this.baseVolume;
+    if (o.restart) {
+      try { a.currentTime = 0; } catch (e) {}
+    } else if (!a.paused) {
+      return true;
+    }
+
+    let p;
+    try { p = a.play(); } catch (e) { p = Promise.reject(e); }
+    if (p && typeof p.catch === 'function') {
+      p.catch((err) => {
+        if (err && err.name === 'NotAllowedError' && o.allowDeferredUnlock) {
+          this.unlockHandler = () => {
+            this.clearUnlock();
+            const ts = document.getElementById('title-screen');
+            if (ts && ts.classList.contains('active') && !this.isMuted() && !OpMovieEngine.active) {
+              this.play({ restart: false, loop: !!o.loop, allowDeferredUnlock: false });
+            }
+          };
+          document.addEventListener('pointerdown', this.unlockHandler, true);
+          document.addEventListener('keydown', this.unlockHandler, true);
+        } else if (this.pendingFallback) {
+          const fb = this.pendingFallback;
+          this.pendingFallback = null;
+          fb();
+        }
+      });
+    }
+    return true;
+  },
+
+  stop() {
+    this.clearFade();
+    this.clearUnlock();
+    this.pendingFallback = null;
+    if (!this.audio) return;
+    try {
+      this.audio.pause();
+      this.audio.currentTime = 0;
+      this.audio.volume = this.baseVolume;
+    } catch (e) {}
+  },
+
+  fadeOutAndStop(durationMs) {
+    this.clearFade();
+    this.clearUnlock();
+    this.pendingFallback = null;
+    if (!this.audio || this.audio.paused) {
+      this.stop();
+      return;
+    }
+    const ms = Math.max(80, durationMs || 420);
+    const startVol = this.audio.volume;
+    const steps = 12;
+    const stepMs = ms / steps;
+    let step = 0;
+    this.fadeTimer = setInterval(() => {
+      step++;
+      if (!this.audio || step >= steps) {
+        this.stop();
+        return;
+      }
+      this.audio.volume = Math.max(0, startVol * (1 - step / steps));
+    }, stepMs);
+  }
+};
+window.OpAudioPlayer = OpAudioPlayer;
+
 const OpMovieEngine = {
   active: false,
   replayOnly: false,
@@ -53,11 +203,12 @@ const OpMovieEngine = {
   rafId: null,
   audioTimer: null,
   startTs: 0,
-  fallbackDurationMs: 14000,
+  fallbackDurationMs: 16000,
   lastCutIdx: -1,
   onDone: null,
 
   preloadAssets() {
+    OpAudioPlayer.preload();
     if (typeof AssetImageCache === 'undefined') return;
     AssetImageCache.resolveTitleLogo();
     AssetImageCache.resolveStageBg('bg_street_cypher.jpg');
@@ -217,7 +368,13 @@ const OpMovieEngine = {
     layer.classList.add('active');
 
     this.renderCut(0);
-    this.startSynthPulse();
+    OpAudioPlayer.play({
+      restart: true,
+      loop: false,
+      onFallback: () => {
+        if (this.active && !this.usingVideo) this.startSynthPulse();
+      }
+    });
     if (window.ENABLE_EXTERNAL_OP_VIDEO) this.tryMountExternalVideo();
 
     const tick = (now) => {
@@ -257,6 +414,7 @@ const OpMovieEngine = {
       if (!this.active) return;
       this.usingVideo = true;
       this.stopSynthPulse();
+      OpAudioPlayer.stop();
       vid.classList.add('ready');
       const p = vid.play();
       if (p && typeof p.catch === 'function') {
@@ -268,9 +426,12 @@ const OpMovieEngine = {
     tryNext();
   },
 
-  stopCleanupOnly() {
+  stopCleanupOnly(opts) {
+    const o = opts || {};
     this.active = false;
     this.stopSynthPulse();
+    if (o.fadeAudio) OpAudioPlayer.fadeOutAndStop(420);
+    else OpAudioPlayer.stop();
     if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
     const vid = document.getElementById('op94-video');
     if (vid) {
@@ -278,10 +439,10 @@ const OpMovieEngine = {
     }
   },
 
-  finish() {
+  finish(skipped) {
     const wasReplay = this.replayOnly;
     const cb = this.onDone;
-    this.stopCleanupOnly();
+    this.stopCleanupOnly({ fadeAudio: !skipped && !wasReplay });
     const layer = document.getElementById('op-movie-layer');
     if (layer) { layer.classList.remove('active'); layer.innerHTML = ''; }
     if (typeof triggerShutter === 'function') triggerShutter();
@@ -307,7 +468,12 @@ function toggleOpSubtitles() {
 }
 function toggleTitleMute() {
   state.soundMuted = !state.soundMuted;
-  if (state.soundMuted && typeof AudioEngine !== 'undefined') AudioEngine.stop();
+  if (state.soundMuted) {
+    if (typeof AudioEngine !== 'undefined') AudioEngine.stop();
+    OpAudioPlayer.stop();
+  } else {
+    OpAudioPlayer.play({ restart: false, loop: true, allowDeferredUnlock: true });
+  }
   saveState();
   renderTitleScreen();
 }
@@ -403,7 +569,7 @@ function installEditorialTitleAndOp() {
       .op94-scan-entry { position: absolute; inset: 0; z-index: 15; pointer-events: none; animation: op94ScanIn 0.28s ease-out forwards; }
       .op94-fallback-stage { position: absolute; inset: 0; z-index: 1; overflow: hidden; background: #05050a; }
       .op94-anim-scene { position: absolute; inset: 0; overflow: hidden; }
-      .op94-anim-bg { position: absolute; inset: -4%; background-color: #090a14; background-size: cover; background-position: center; filter: brightness(0.68) contrast(1.15); animation: op94KenBurns 3.8s ease-out forwards; }
+      .op94-anim-bg { position: absolute; inset: -4%; background-color: #090a14; background-size: cover; background-position: center; filter: brightness(0.68) contrast(1.15); animation: op94KenBurns 4.2s ease-out forwards; }
       .op94-disc-ring { position: absolute; left: 50%; top: 42%; width: 170px; height: 170px; border-radius: 50%; border: 2px solid #00f0ff; box-shadow: 0 0 34px rgba(0,240,255,0.65), inset 0 0 26px rgba(255,200,59,0.55); animation: op94RingPulse 1.4s ease-in-out infinite; }
       .op94-eye-stack { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 0 10px; }
       .op94-eye-banner { height: 96px; border-top: 2px solid #00f0ff; border-bottom: 2px solid #ff2e93; overflow: hidden; transform: skewY(-5deg); box-shadow: 0 0 28px rgba(0,240,255,0.4); background: #080810; }
@@ -451,6 +617,10 @@ function installEditorialTitleAndOp() {
     ts.style.background = '';
     ts.classList.add('ts94-root', 'active');
 
+    if (!state.soundMuted && !OpMovieEngine.active) {
+      OpAudioPlayer.play({ restart: false, loop: true, allowDeferredUnlock: true });
+    }
+
     const sideObj = (hasAuto && typeof getSideTheme === 'function') ? getSideTheme(state.profile.side) : { short: 'A-SIDE', color: '#00f0ff', sub: '#ffc83b' };
     const isBSide = hasAuto && state.profile && state.profile.side === 'b_side';
     const accent = isBSide ? '#ff2e93' : '#00f0ff';
@@ -486,7 +656,7 @@ function installEditorialTitleAndOp() {
     }
 
     const continueCard = hasAuto ? `
-      <button class="ts94-nav-card primary" onclick="continueFromTitle()">
+      <button class="ts94-nav-card primary" onclick="OpAudioPlayer.fadeOutAndStop(320);continueFromTitle()">
         <div>
           <span class="ts94-nav-title">CONTINUE</span>
           <span class="ts94-nav-sub">ストリートの続きから再開</span>
@@ -505,7 +675,7 @@ function installEditorialTitleAndOp() {
       <button class="ts94-nav-card ${!hasAuto ? 'primary' : ''}" onclick="startNewGameFromTitle(${hasAuto})">
         <div>
           <span class="ts94-nav-title">NEW GAME</span>
-          <span class="ts94-nav-sub">OPムービー再生 ＆ 新規キャラ作成</span>
+          <span class="ts94-nav-sub">OPムービー再生 ／ 新規キャラ作成</span>
         </div>
         <span class="ts94-nav-meta" style="${hasAuto ? 'color:var(--text-main);' : ''}">START ›</span>
       </button>`;
@@ -520,7 +690,7 @@ function installEditorialTitleAndOp() {
       <div class="ts94-vignette"></div>
 
       <div class="ts94-top-hud">
-        <div class="ts94-status-tag"><span class="ts94-live-dot" style="background:${accent};box-shadow:0 0 8px ${accent};"></span><span>ARCHIVE OS // v10.1</span></div>
+        <div class="ts94-status-tag"><span class="ts94-live-dot" style="background:${accent};box-shadow:0 0 8px ${accent};"></span><span>ARCHIVE OS // v10.2</span></div>
         <button class="ts94-sound-pill" onclick="toggleTitleMute()">${state.soundMuted ? 'SOUND: OFF' : 'SOUND: ON'}</button>
       </div>
 
@@ -542,7 +712,7 @@ function installEditorialTitleAndOp() {
   };
 
   window.startNewGameFromTitle = function (hasExisting) {
-    if (hasExisting && !confirm('新しくキャラクターを作成しますか？（手動のセーブスロットは保持されます）')) return;
+    if (hasExisting && !confirm('新しいキャラクターを作成しますか？（手動のセーブスロットは保持されます）')) return;
     const keepSafe = state.adSafePx ?? 56, keepMute = state.soundMuted, keepLogo = !!state.useLegacyLogoImg;
     const keepLabels = state.worldLabels || [], keepLegends = state.legendArchive || [], keepCloud = state.cloud;
     state = createFreshState();
@@ -564,7 +734,7 @@ function installEditorialTitleAndOp() {
       body.insertAdjacentHTML('beforeend', `
         <div class="panel">
           <div style="font-size:10.5px;font-weight:900;margin-bottom:6px;color:var(--accent-cyan);">🎬 タイトル＆プロローグ設定</div>
-          <button class="btn btn-cyan" style="margin-bottom:6px;" onclick="closeModal();playOpeningMovie({ replayOnly: true })">▶ オープニングムービーを再生</button>
+          <button class="btn btn-cyan" style="margin-bottom:6px;" onclick="closeModal();playOpeningMovie({ replayOnly: true })">▶ オープニングムービーを再再生</button>
         </div>
       `);
     };
