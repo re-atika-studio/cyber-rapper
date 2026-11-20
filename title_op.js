@@ -1,9 +1,9 @@
 /* ============================================================================
-   CYBER RAPPER // v10.2 EDITORIAL TITLE SCREEN & OPENING MOVIE ENGINE
+   CYBER RAPPER // v10.3 EDITORIAL TITLE SCREEN & OPENING MOVIE ENGINE
    - Uses Verified title-logo-base.png (Zero title_logo_v2 404/503 Errors)
    - Zero Face-Overlap 3-Zone Poster Layout (Dual KING & DIVA High-Res Base)
-   - Animatic 4-Cut Prologue (Opt-in <video> when ENABLE_EXTERNAL_OP_VIDEO=true)
-   - Dedicated Opening Theme BGM Engine (assets/audio/op_theme.mp3 + Synth Fallback)
+   - BPM 134 Audio-Synced 4-Cut Prologue (op_theme.mp3 currentTime Master Sync)
+   - Scene 1: bg_op_scene1.jpg + 60fps CSS Eyelid Wake-Up, Focus Blur & Embers
    ============================================================================ */
 
 const OP_VIDEO_CANDIDATES = [
@@ -17,25 +17,40 @@ const OP_BGM_CANDIDATES = [
   'assets/audio/op_theme.m4a'
 ];
 
+// BPM 134 (Half-time 67 BPM) Audio-Synced Timeline:
+// 0.00s-1.79s: Opening Voice (4 beats) | 1.79s-8.96s: Block 1-2 (Scene 1)
+// 8.96s-12.54s: Block 3 (Scene 2) | 12.54s-16.12s: Block 4 (Scene 3)
+// 16.12s-19.70s: Beat Drop Climax (Scene 4)
+const OP_TIMELINE_TOTAL_SEC = 19.70;
+
 const OP_PROLOGUE_CUTS = [
   {
     id: '01',
-    tag: 'ARCHIVE 01 // REBUILT TOKYO',
-    lines: '一度滅び、再構築された都市。\n唯一失われたのは――旧世界の「生の音楽」の記憶。',
-    bg: 'bg_metro_station.jpg',
+    startSec: 0.00,
+    endSec: 8.96,
+    subDelaySec: 1.65,
+    tag: 'ARCHIVE 01 // AWAKENING',
+    lines: '一度滅びた都市。\n瓦礫の中で、俺は目を覚ました。',
+    bg: 'bg_op_scene1.jpg',
     accent: '#00f0ff',
-    mode: 'city'
+    mode: 'wakeup'
   },
   {
     id: '02',
-    tag: 'ARCHIVE 02 // MEMORY DISC',
-    lines: '路地裏に眠る旧文明の記憶媒体『MEMORY ARCHIVE』。\nそれがストリートの鼓動を呼び覚ます。',
+    startSec: 8.96,
+    endSec: 12.54,
+    subDelaySec: 0.0,
+    tag: 'ARCHIVE 02 // RECONSTRUCTION',
+    lines: '生き延びた人類は、AIと共に街を再構築した。\n――ただ一つ、『生の音楽』だけを失って。',
     bg: 'bg_record_shop.jpg',
     accent: '#ffc83b',
     mode: 'disc'
   },
   {
     id: '03',
+    startSec: 12.54,
+    endSec: 16.12,
+    subDelaySec: 0.0,
     tag: 'ARCHIVE 03 // NEURAL SOCKET SYNC',
     lines: '神経接続（SYNC）完了。\n失われたビートが、再び脈を打ちだす。',
     bg: 'bg_studio_booth.jpg',
@@ -44,6 +59,9 @@ const OP_PROLOGUE_CUTS = [
   },
   {
     id: '04',
+    startSec: 16.12,
+    endSec: 19.70,
+    subDelaySec: 0.0,
     tag: 'ARCHIVE 04 // A-SIDE vs B-SIDE',
     lines: '王道の A-SIDE か、異端の B-SIDE か。\nお前の言葉（リリック）で、頂点を奪え。',
     bg: 'bg_street_cypher.jpg',
@@ -106,6 +124,10 @@ const OpAudioPlayer = {
 
   preload() {
     try { this.ensureAudio(); } catch (e) {}
+  },
+
+  isPlayingRealAudio() {
+    return !!(this.audio && !this.failed && !this.audio.paused && isFinite(this.audio.currentTime));
   },
 
   play(opts) {
@@ -203,12 +225,14 @@ const OpMovieEngine = {
   rafId: null,
   audioTimer: null,
   startTs: 0,
-  fallbackDurationMs: 16000,
+  fallbackDurationMs: Math.round(OP_TIMELINE_TOTAL_SEC * 1000),
   lastCutIdx: -1,
   onDone: null,
 
   preloadAssets() {
     OpAudioPlayer.preload();
+    const s1 = new Image();
+    s1.src = 'assets/images/bg_op_scene1.jpg';
     if (typeof AssetImageCache === 'undefined') return;
     AssetImageCache.resolveTitleLogo();
     AssetImageCache.resolveStageBg('bg_street_cypher.jpg');
@@ -217,11 +241,67 @@ const OpMovieEngine = {
   },
 
   preloadPrologueCuts() {
+    const s1 = new Image();
+    s1.src = 'assets/images/bg_op_scene1.jpg';
     if (typeof AssetImageCache === 'undefined') return;
-    ['bg_metro_station.jpg', 'bg_record_shop.jpg', 'bg_studio_booth.jpg',
+    ['bg_op_scene1.jpg', 'bg_metro_station.jpg', 'bg_record_shop.jpg', 'bg_studio_booth.jpg',
      'cutin_eyes_king.png', 'cutin_eyes_diva.png', 'fx_flame_cyan.png', 'fx_flame_pink.png'].forEach(p => {
       AssetImageCache.resolve(p, { cutout: false });
     });
+  },
+
+  getPlaybackSec(now) {
+    if (OpAudioPlayer.isPlayingRealAudio()) {
+      return OpAudioPlayer.audio.currentTime;
+    }
+    return Math.max(0, (now - this.startTs) / 1000);
+  },
+
+  getCutIndexForSec(sec) {
+    for (let i = OP_PROLOGUE_CUTS.length - 1; i >= 0; i--) {
+      if (sec >= OP_PROLOGUE_CUTS[i].startSec) return i;
+    }
+    return 0;
+  },
+
+  getEyelidOpenness(t) {
+    if (t < 0.55) return 0.0;
+    if (t < 1.79) {
+      const p = (t - 0.55) / 1.24;
+      return 0.46 * (0.5 - 0.5 * Math.cos(Math.PI * p));
+    }
+    if (t < 2.25) {
+      const p = (t - 1.79) / 0.46;
+      return 0.46 - 0.38 * (0.5 - 0.5 * Math.cos(Math.PI * p));
+    }
+    if (t < 3.60) {
+      const p = (t - 2.25) / 1.35;
+      return 0.08 + 0.92 * (0.5 - 0.5 * Math.cos(Math.PI * p));
+    }
+    return 1.0;
+  },
+
+  updateWakeupFx(sec) {
+    const bgEl = document.getElementById('op94-wakeup-bg');
+    const lidTop = document.getElementById('op94-eyelid-top');
+    const lidBot = document.getElementById('op94-eyelid-bot');
+    const darkEl = document.getElementById('op94-wakeup-dark');
+    if (!bgEl || !lidTop || !lidBot || !darkEl) return;
+
+    const openness = this.getEyelidOpenness(sec);
+    const lidPct = Math.max(0, (1 - openness) * 54);
+    lidTop.style.height = `${lidPct.toFixed(2)}%`;
+    lidBot.style.height = `${lidPct.toFixed(2)}%`;
+
+    const darkOpacity = openness <= 0.01 ? 1.0 : Math.max(0, 1 - openness * 1.35);
+    darkEl.style.opacity = darkOpacity.toFixed(3);
+
+    const blurPx = sec < 3.75 ? Math.max(0, (1 - Math.max(0, sec - 0.55) / 3.2) * 18) : 0;
+    const zoom = 1.02 + Math.min(1, sec / 8.96) * 0.11;
+    const swayX = Math.sin(sec * 0.95) * 4;
+    const swayY = Math.cos(sec * 0.72) * 5 + (1 - Math.min(1, sec / 3.8)) * 12;
+    bgEl.style.transform = `scale(${zoom.toFixed(4)}) translate(${swayX.toFixed(1)}px, ${swayY.toFixed(1)}px)`;
+    bgEl.style.filter = `brightness(0.76) contrast(1.14) blur(${blurPx.toFixed(1)}px)`;
   },
 
   startSynthPulse() {
@@ -260,7 +340,7 @@ const OpMovieEngine = {
       step++;
     };
     playStep();
-    this.audioTimer = setInterval(playStep, 430);
+    this.audioTimer = setInterval(playStep, 448);
   },
 
   stopSynthPulse() {
@@ -269,10 +349,29 @@ const OpMovieEngine = {
 
   buildFallbackCutHTML(cutIdx) {
     const cut = OP_PROLOGUE_CUTS[cutIdx] || OP_PROLOGUE_CUTS[0];
-    const bgUrl = (typeof AssetImageCache !== 'undefined' && AssetImageCache.resolveStageBg(cut.bg)) || '';
+    const cachedBg = (typeof AssetImageCache !== 'undefined' && AssetImageCache.resolveStageBg(cut.bg)) || '';
+    const bgUrl = cachedBg || `assets/images/${cut.bg}`;
     const bgStyle = bgUrl ? `background-image:url('${bgUrl}');` : '';
     const fCyan = typeof AssetImageCache !== 'undefined' ? AssetImageCache.resolve('fx_flame_cyan.png', { cutout: false }) : null;
     const fPink = typeof AssetImageCache !== 'undefined' ? AssetImageCache.resolve('fx_flame_pink.png', { cutout: false }) : null;
+
+    if (cut.mode === 'wakeup') {
+      const embers = Array.from({ length: 14 }, (_, idx) => {
+        const left = (idx * 7.3 + 4) % 94;
+        const delay = ((idx * 0.43) % 3.2).toFixed(2);
+        const dur = (3.4 + (idx % 4) * 0.7).toFixed(2);
+        const size = 2 + (idx % 3);
+        return `<span class="op94-ember" style="left:${left.toFixed(1)}%;width:${size}px;height:${size}px;animation-delay:-${delay}s;animation-duration:${dur}s;"></span>`;
+      }).join('');
+      return `<div class="op94-anim-scene cut-01 op94-wakeup-scene">
+        <div id="op94-wakeup-bg" class="op94-wakeup-bg" style="${bgStyle}"></div>
+        <div class="op94-ember-layer">${embers}</div>
+        <div id="op94-wakeup-dark" class="op94-wakeup-dark"></div>
+        <div id="op94-eyelid-top" class="op94-eyelid top"></div>
+        <div id="op94-eyelid-bot" class="op94-eyelid bot"></div>
+      </div>`;
+    }
+
     let extra = '';
     if (cut.mode === 'disc') {
       extra = `<div class="op94-disc-ring"></div>`;
@@ -357,7 +456,7 @@ const OpMovieEngine = {
           <button class="op94-ctrl-btn skip" onclick="finishOpeningMovie(true)">SKIP ⏭</button>
         </div>
       </div>
-      <div class="op94-bottom-wrap" id="op94-sub-wrap" style="${this.subtitlesOn ? '' : 'opacity:0;'}">
+      <div class="op94-bottom-wrap" id="op94-sub-wrap" style="opacity:0;">
         <div class="op94-sub-box">
           <div id="op94-sub-tag" class="op94-sub-tag"></div>
           <div id="op94-sub-text" class="op94-sub-text"></div>
@@ -368,6 +467,7 @@ const OpMovieEngine = {
     layer.classList.add('active');
 
     this.renderCut(0);
+    this.updateWakeupFx(0);
     OpAudioPlayer.play({
       restart: true,
       loop: false,
@@ -381,16 +481,31 @@ const OpMovieEngine = {
       if (!this.active) return;
       const vid = document.getElementById('op94-video');
       let prog = 0;
+      let sec = 0;
       if (this.usingVideo && vid && vid.duration && isFinite(vid.duration) && vid.duration > 0) {
-        prog = Math.min(1, vid.currentTime / vid.duration);
+        sec = vid.currentTime;
+        prog = Math.min(1, sec / vid.duration);
       } else if (!this.usingVideo) {
-        prog = Math.min(1, (now - this.startTs) / this.fallbackDurationMs);
-        if (prog >= 1) { this.finish(false); return; }
+        sec = this.getPlaybackSec(now);
+        prog = Math.min(1, sec / OP_TIMELINE_TOTAL_SEC);
+        if (sec >= OP_TIMELINE_TOTAL_SEC) { this.finish(false); return; }
       }
       const bar = document.getElementById('op94-progress-fill');
       if (bar) bar.style.width = `${(prog * 100).toFixed(1)}%`;
-      const cutIdx = Math.min(3, Math.floor(prog * 4));
+
+      const cutIdx = this.getCutIndexForSec(sec);
       this.renderCut(cutIdx);
+      if (cutIdx === 0 && !this.usingVideo) {
+        this.updateWakeupFx(sec);
+      }
+
+      const wrap = document.getElementById('op94-sub-wrap');
+      if (wrap) {
+        const cut = OP_PROLOGUE_CUTS[cutIdx] || OP_PROLOGUE_CUTS[0];
+        const showSub = this.subtitlesOn && (sec - cut.startSec >= (cut.subDelaySec || 0));
+        wrap.style.opacity = showSub ? '1' : '0';
+      }
+
       this.rafId = requestAnimationFrame(tick);
     };
     this.rafId = requestAnimationFrame(tick);
@@ -566,10 +681,23 @@ function installEditorialTitleAndOp() {
       @keyframes op94ScanIn { 0% { opacity: 1; background: linear-gradient(180deg, #00f0ff 0%, #fff 50%, #000 100%); } 100% { opacity: 0; pointer-events: none; } }
       @keyframes op94Glitch { 0% { opacity: 0.85; transform: scaleY(1.04); } 100% { opacity: 0; transform: scaleY(1); } }
       @keyframes op94RingPulse { 0%, 100% { transform: translate(-50%,-50%) scale(0.92); opacity: 0.55; } 50% { transform: translate(-50%,-50%) scale(1.08); opacity: 0.95; } }
+      @keyframes op94EmberRise {
+        0% { transform: translate3d(0, 105vh, 0) scale(0.7); opacity: 0; }
+        15% { opacity: 0.9; }
+        75% { opacity: 0.7; }
+        100% { transform: translate3d(18px, -12vh, 0) scale(1.2); opacity: 0; }
+      }
       .op94-scan-entry { position: absolute; inset: 0; z-index: 15; pointer-events: none; animation: op94ScanIn 0.28s ease-out forwards; }
       .op94-fallback-stage { position: absolute; inset: 0; z-index: 1; overflow: hidden; background: #05050a; }
       .op94-anim-scene { position: absolute; inset: 0; overflow: hidden; }
       .op94-anim-bg { position: absolute; inset: -4%; background-color: #090a14; background-size: cover; background-position: center; filter: brightness(0.68) contrast(1.15); animation: op94KenBurns 4.2s ease-out forwards; }
+      .op94-wakeup-bg { position: absolute; inset: -6%; background-color: #05050a; background-size: cover; background-position: center; will-change: transform, filter; }
+      .op94-wakeup-dark { position: absolute; inset: 0; background: #000; pointer-events: none; z-index: 2; }
+      .op94-eyelid { position: absolute; left: -12%; right: -12%; height: 54%; background: #000; z-index: 3; pointer-events: none; box-shadow: 0 0 38px 22px #000; will-change: height; }
+      .op94-eyelid.top { top: 0; border-bottom-left-radius: 50% 24px; border-bottom-right-radius: 50% 24px; }
+      .op94-eyelid.bot { bottom: 0; border-top-left-radius: 50% 24px; border-top-right-radius: 50% 24px; }
+      .op94-ember-layer { position: absolute; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+      .op94-ember { position: absolute; top: 0; border-radius: 50%; background: radial-gradient(circle, #fff3c4 0%, #ff8c24 55%, transparent 100%); box-shadow: 0 0 8px #ff6a00; animation: op94EmberRise 4s linear infinite; }
       .op94-disc-ring { position: absolute; left: 50%; top: 42%; width: 170px; height: 170px; border-radius: 50%; border: 2px solid #00f0ff; box-shadow: 0 0 34px rgba(0,240,255,0.65), inset 0 0 26px rgba(255,200,59,0.55); animation: op94RingPulse 1.4s ease-in-out infinite; }
       .op94-eye-stack { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 0 10px; }
       .op94-eye-banner { height: 96px; border-top: 2px solid #00f0ff; border-bottom: 2px solid #ff2e93; overflow: hidden; transform: skewY(-5deg); box-shadow: 0 0 28px rgba(0,240,255,0.4); background: #080810; }
@@ -593,7 +721,7 @@ function installEditorialTitleAndOp() {
       .op94-badge { font-family: "SF Mono", Consolas, monospace; font-size: 9.5px; font-weight: 800; letter-spacing: 0.14em; color: rgba(246,247,251,0.82); background: rgba(8,8,14,0.72); border: 1px solid rgba(255,255,255,0.15); padding: 4px 9px; border-radius: 99px; backdrop-filter: blur(8px); }
       .op94-ctrl-btn { background: rgba(14,14,22,0.78); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 5px 11px; border-radius: 99px; font-family: monospace; font-size: 10px; font-weight: 800; letter-spacing: 0.08em; cursor: pointer; }
       .op94-ctrl-btn.skip { border-color: rgba(0,240,255,0.55); color: var(--accent-cyan); }
-      .op94-bottom-wrap { position: absolute; left: 14px; right: 14px; bottom: 18px; z-index: 10; transition: opacity 0.2s ease; pointer-events: none; }
+      .op94-bottom-wrap { position: absolute; left: 14px; right: 14px; bottom: 18px; z-index: 10; transition: opacity 0.35s ease; pointer-events: none; }
       .op94-sub-box { background: rgba(7,7,13,0.82); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,0.14); border-left: 3px solid var(--accent-cyan); border-radius: 10px; padding: 11px 14px; }
       .op94-sub-tag { font-family: "SF Mono", Consolas, monospace; font-size: 9px; font-weight: 900; letter-spacing: 0.16em; margin-bottom: 4px; color: var(--accent-cyan); }
       .op94-sub-text { font-size: 12px; font-weight: 700; line-height: 1.55; color: #f8fafc; letter-spacing: 0.03em; }
@@ -690,7 +818,7 @@ function installEditorialTitleAndOp() {
       <div class="ts94-vignette"></div>
 
       <div class="ts94-top-hud">
-        <div class="ts94-status-tag"><span class="ts94-live-dot" style="background:${accent};box-shadow:0 0 8px ${accent};"></span><span>ARCHIVE OS // v10.2</span></div>
+        <div class="ts94-status-tag"><span class="ts94-live-dot" style="background:${accent};box-shadow:0 0 8px ${accent};"></span><span>ARCHIVE OS // v10.3</span></div>
         <button class="ts94-sound-pill" onclick="toggleTitleMute()">${state.soundMuted ? 'SOUND: OFF' : 'SOUND: ON'}</button>
       </div>
 
