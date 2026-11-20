@@ -1,9 +1,9 @@
 /* ============================================================================
-   CYBER RAPPER // v10.3 EDITORIAL TITLE SCREEN & OPENING MOVIE ENGINE
+   CYBER RAPPER // v10.3.1 EDITORIAL TITLE SCREEN & OPENING MOVIE ENGINE
    - Uses Verified title-logo-base.png (Zero title_logo_v2 404/503 Errors)
    - Zero Face-Overlap 3-Zone Poster Layout (Dual KING & DIVA High-Res Base)
    - BPM 134 Audio-Synced 4-Cut Prologue (op_theme.mp3 currentTime Master Sync)
-   - Scene 1: bg_op_scene1.jpg + 60fps CSS Eyelid Wake-Up, Focus Blur & Embers
+   - Scene 1: Direct assets/images/bg_op_scene1.jpg (Bypass resolveStageBg fallback)
    ============================================================================ */
 
 const OP_VIDEO_CANDIDATES = [
@@ -234,6 +234,7 @@ const OpMovieEngine = {
     const s1 = new Image();
     s1.src = 'assets/images/bg_op_scene1.jpg';
     if (typeof AssetImageCache === 'undefined') return;
+    AssetImageCache.resolve('bg_op_scene1.jpg', { cutout: false });
     AssetImageCache.resolveTitleLogo();
     AssetImageCache.resolveStageBg('bg_street_cypher.jpg');
     AssetImageCache.resolveBaseSprite(false);
@@ -349,7 +350,8 @@ const OpMovieEngine = {
 
   buildFallbackCutHTML(cutIdx) {
     const cut = OP_PROLOGUE_CUTS[cutIdx] || OP_PROLOGUE_CUTS[0];
-    const cachedBg = (typeof AssetImageCache !== 'undefined' && AssetImageCache.resolveStageBg(cut.bg)) || '';
+    // Use exact AssetImageCache.resolve (NOT resolveStageBg) so bg_op_scene1.jpg is never hijacked by bg_street_cypher.png fallback
+    const cachedBg = (typeof AssetImageCache !== 'undefined' && AssetImageCache.resolve(cut.bg, { cutout: false })) || '';
     const bgUrl = cachedBg || `assets/images/${cut.bg}`;
     const bgStyle = bgUrl ? `background-image:url('${bgUrl}');` : '';
     const fCyan = typeof AssetImageCache !== 'undefined' ? AssetImageCache.resolve('fx_flame_cyan.png', { cutout: false }) : null;
@@ -818,7 +820,7 @@ function installEditorialTitleAndOp() {
       <div class="ts94-vignette"></div>
 
       <div class="ts94-top-hud">
-        <div class="ts94-status-tag"><span class="ts94-live-dot" style="background:${accent};box-shadow:0 0 8px ${accent};"></span><span>ARCHIVE OS // v10.3</span></div>
+        <div class="ts94-status-tag"><span class="ts94-live-dot" style="background:${accent};box-shadow:0 0 8px ${accent};"></span><span>ARCHIVE OS // v10.3.1</span></div>
         <button class="ts94-sound-pill" onclick="toggleTitleMute()">${state.soundMuted ? 'SOUND: OFF' : 'SOUND: ON'}</button>
       </div>
 
